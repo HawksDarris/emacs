@@ -1,0 +1,43 @@
+#+OPTIONS: org-html-head-include-default-style:nil
+#+HTML_HEAD: <style type="text/css">
+#+HTML_HEAD:     body {
+#+HTML_HEAD:       background-color: #f1f1f1;
+#+HTML_HEAD:       margin: 0;
+#+HTML_HEAD:       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+#+HTML_HEAD:     }
+#+HTML_HEAD:
+#+HTML_HEAD:     .container { margin: 50px auto 40px auto; width: 600px; text-align: center; }
+#+HTML_HEAD:
+#+HTML_HEAD:     a { color: #4183c4; text-decoration: none; }
+#+HTML_HEAD:     a:hover { text-decoration: underline; }
+#+HTML_HEAD:
+#+HTML_HEAD:     h1 { width: 800px; position:relative; left: -100px; letter-spacing: -1px; line-height: 60px; font-size: 60px; font-weight: 100; margin: 0px 0 50px 0; text-shadow: 0 1px 0 #fff; }
+#+HTML_HEAD:     p { color: rgba(0, 0, 0, 0.5); margin: 20px 0; line-height: 1.6; }
+#+HTML_HEAD:
+#+HTML_HEAD:     ul { list-style: none; margin: 25px 0; padding: 0; }
+#+HTML_HEAD:     li { display: table-cell; font-weight: bold; width: 1%; }
+#+HTML_HEAD:
+#+HTML_HEAD:     .logo { display: inline-block; margin-top: 35px; }
+#+HTML_HEAD:     .logo-img-2x { display: none; }
+#+HTML_HEAD:     @media
+#+HTML_HEAD:     only screen and (-webkit-min-device-pixel-ratio: 2),
+#+HTML_HEAD:     only screen and (   min--moz-device-pixel-ratio: 2),
+#+HTML_HEAD:     only screen and (     -o-min-device-pixel-ratio: 2/1),
+#+HTML_HEAD:     only screen and (        min-device-pixel-ratio: 2),
+#+HTML_HEAD:     only screen and (                min-resolution: 192dpi),
+#+HTML_HEAD:     only screen and (                min-resolution: 2dppx) {
+#+HTML_HEAD:       .logo-img-1x { display: none; }
+#+HTML_HEAD:       .logo-img-2x { display: inline-block; }
+#+HTML_HEAD:     }
+#+HTML_HEAD:
+#+HTML_HEAD:     #suggestions {
+#+HTML_HEAD:       margin-top: 35px;
+#+HTML_HEAD:       color: #ccc;
+#+HTML_HEAD:     }
+#+HTML_HEAD:     #suggestions a {
+#+HTML_HEAD:       color: #666666;
+#+HTML_HEAD:       font-weight: 200;
+#+HTML_HEAD:       font-size: 14px;
+#+HTML_HEAD:       margin: 0 10px;
+#+HTML_HEAD:     }
+#+HTML_HEAD: </style>

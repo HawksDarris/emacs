@@ -1,39 +1,3 @@
-(package-initialize)
-
-;; (setq straight-use-package-by-default t)
-;; (defvar bootstrap-version)
-;; (let ((bootstrap-file
-;;        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-;;       (bootstrap-version 5))
-;;   (unless (file-exists-p bootstrap-file)
-;;     (with-current-buffer
-;;         (url-retrieve-synchronously
-;;          "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-;;          'silent 'inhibit-cookies)
-;;       (goto-char (point-max))
-;;       (eval-print-last-sexp)))
-;;   (load bootstrap-file nil 'nomessage))
-
-(setq-default
- global-auto-revert-non-file-buffers t
- line-spacing 2
- )
-
-(setq
- word-wrap t
- recentf-max-menu-items 50
- recentf-max-saved-items 300
- recentf-exclude '("/\\.git/.*\\'")
- initial-major-mode 'org-mode
- initial-scratch-message
- "#+title: Scratch Buffer\n\n"
- )
-
-(add-hook 'before-save-hook 'time-stamp nil)
-
-(add-to-list 'recentf-exclude "/elpa/.*\\'")
-(add-to-list 'recentf-exclude "/tramp.*\\'")
-
 (global-set-key (kbd "C-x C-o")
                 (lambda ()
                   (interactive)
@@ -51,6 +15,7 @@
     "Revert buffer without confirmation."
     (interactive) (revert-buffer t t))
   :config
+  (setq visible-bell t)
   (if init-file-debug
       (setq warning-minimum-level :debug)
     (setq warning-minimum-level :emergency))
@@ -68,6 +33,7 @@
   (setq mailcap-user-mime-data
         '((type . "application/pdf")
           (viewer . pdf-view-mode)))
+  (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   :bind
   (("C-c R" . my-reload-emacs))
   ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts
@@ -151,11 +117,16 @@
  time-stamp-active t
  time-stamp-start "#\\+lastmod:[ \t]*"
  time-stamp-end "$"
- time-stamp-format "[%04Y-%02m-%02d %a]"
+ time-stamp-format "[%04Y-%02m-%02d %:A]"
  org-clock-persist t
  org-clock-in-resume t
  org-clock-out-when-done t
  org-clock-report-include-clocking-task t
+ org-html-validation-link nil
+ org-log-done 'time
+ org-log-repeat 'time
+ org-archive-location "~/org/archive.org::"
+ org-agenda-files '("~/org/")
  )
 
 (use-package org
@@ -185,6 +156,10 @@
      ("t" "New task" entry
       (file+headline org-default-notes-file "Tasks")
       "* TODO %i%?")
+     ("a" "Agenda notes" entry
+      (file+datetree "~/org/notes.org")
+      "* %U Agenda notes for %^{Agenda item} \n%?"
+      :clock-in t :clock-resume t :clock-out t)
      )))
 
 (org-babel-do-load-languages
@@ -244,6 +219,22 @@
   (org-roam-db-autosync-mode)
   ;; If using org-roam-protocol
   (require 'org-roam-protocol))
+
+(use-package org-fancy-priorities
+:diminish
+:ensure t
+:hook (org-mode . org-fancy-priorities-mode)
+:config
+(setq org-fancy-priorities-list '("🅰" "🅱" "🅲" "🅳" "🅴")))
+
+(use-package org-pretty-tags
+:diminish org-pretty-tags-mode
+:ensure t
+:config
+(setq org-pretty-tags-surrogate-strings
+      '(("work"  . "⚒")))
+
+(org-pretty-tags-global-mode))
 
 (use-package man
 :bind (
@@ -334,7 +325,10 @@
               ("n" . 'dashboard-next-line)
               ("p" . 'dashboard-previous-line)
               )
-  :init (add-hook 'dashboard-mode-hook (lambda () (setq show-trailing-whitespace nil)))
+  :init
+  (add-hook 'dashboard-mode-hook (lambda () (setq show-trailing-whitespace nil)))
+  (hl-line-mode t)
+  (global-hl-line-mode t)
   :custom
   (dashboard-set-navigator t)
   (dashboard-center-content t)
@@ -351,11 +345,14 @@
   (setq
    dashboard-projects-backend 'project-el
    dashboard-projects-switch-function 'counsel-projectile-switch-project-by-name
-   dashboard-items '((recents        . 5)
+   dashboard-items '(
+                     (agenda         . 7)
+                     (recents        . 5)
                      (projects       . 2)
                      (bookmarks      . 5)
-                     (agenda         . 3)
                      (registers      . 5)))
+  (setq dashboard-agenda-sort-strategy '(todo-state-up time-up))
+
   :custom-face
   (dashboard-heading ((t (:foreground nil :weight bold)))) ; "#f1fa8c"
   )
@@ -502,6 +499,44 @@
         (kill-buffer buffer))))
   (message "Killed all other buffers"))
 
+(defun isamert/toggle-side-bullet-org-buffer ()
+  "Toggle `bullet.org` in a side buffer for quick note taking.  The buffer is opened in side window so it can't be accidentaly removed."
+  (interactive)
+  (isamert/toggle-side-buffer-with-file "~/bullet.org"))
+
+(defun isamert/buffer-visible-p (buffer)
+ "Check if given BUFFER is visible or not.  BUFFER is a string representing the buffer name."
+  (or (eq buffer (window-buffer (selected-window))) (get-buffer-window buffer)))
+
+(defun isamert/display-buffer-in-side-window (buffer)
+  "Just like `display-buffer-in-side-window' but only takes a BUFFER and rest of the parameters are for my taste."
+  (select-window
+   (display-buffer-in-side-window
+    buffer
+    (list (cons 'side 'right)
+          (cons 'slot 0)
+          (cons 'window-width 84)
+          (cons 'window-parameters (list (cons 'no-delete-other-windows t)
+                                         (cons 'no-other-window nil)))))))
+
+(defun isamert/remove-window-with-buffer (the-buffer-name)
+  "Remove window containing given THE-BUFFER-NAME."
+  (mapc (lambda (window)
+          (when (string-equal (buffer-name (window-buffer window)) the-buffer-name)
+            (delete-window window)))
+        (window-list (selected-frame))))
+
+(defun isamert/toggle-side-buffer-with-file (file-path)
+  "Toggle FILE-PATH in a side buffer. The buffer is opened in side window so it can't be accidentaly removed."
+  (interactive)
+  (let ((fname (file-name-nondirectory file-path)))
+  (if (isamert/buffer-visible-p fname)
+      (isamert/remove-window-with-buffer fname)
+    (isamert/display-buffer-in-side-window
+     (save-window-excursion
+       (find-file file-path)
+       (current-buffer))))))
+
 (use-package package
   :config
   (add-to-list 'package-archives
@@ -521,15 +556,6 @@
   :ensure nil
   :config
   (add-to-list 'auto-mode-alist '("\\.\\(?:OD[CFIGPST]\\|od[cfigpst]\\)\\'" . doc-view-mode-maybe)))
-
-(use-package persistent-scratch
-  :init
-  (persistent-scratch-setup-default)
-  (persistent-scratch-autosave-mode)
-  :hook
-  (after-init . persistent-scratch-setup-default)
-  :bind
-  (("C-c w x" . scratch-buffer)))
 
 (use-package corfu
   :custom

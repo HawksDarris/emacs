@@ -33,7 +33,7 @@
   (setq mailcap-user-mime-data
         '((type . "application/pdf")
           (viewer . pdf-view-mode)))
-  (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+  ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   :bind
   (("C-c R" . my-reload-emacs))
   ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts

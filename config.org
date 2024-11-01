@@ -66,41 +66,40 @@
 
 ** Emacs Use-Package
 #+BEGIN_SRC emacs-lisp
-    (use-package emacs
-      :preface
-      (defun my-reload-emacs ()
-        "Reload the Emacs configuration"
-        (interactive)
-        (load-file "~/.emacs.d/init.el"))
-      (defun revert-buffer-no-confirm ()
-        "Revert buffer without confirmation."
-        (interactive) (revert-buffer t t))
-      :config
-      (setq visible-bell t)
-      (if init-file-debug
-          (setq warning-minimum-level :debug)
-        (setq warning-minimum-level :emergency))
-      ;; Space around the windows
-      ;; (fringe-mode '(0 . 0))
-      (set-fringe-style '(8 . 8))
-      ;; Terminal transparency
-      (face-spec-set 'default
-                     '((((type tty)) :background "unspecified-bg")))
-      ;; Remember line number
-      (if (fboundp #'save-place-mode)
-          (save-place-mode +1)
-        (setq-default save-place t))
-      ;; Mimetypes
-      (setq mailcap-user-mime-data
-            '((type . "application/pdf")
-              (viewer . pdf-view-mode)))
-      (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-      :bind
-      (("C-c R" . my-reload-emacs))
-      ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts
-      ("C-c C-r" . revert-buffer-no-confirm)
-      :hook (before-save . delete-trailing-whitespace)
-      )
+  (use-package emacs
+    :preface
+    (defun my-reload-emacs ()
+      "Reload the Emacs configuration"
+      (interactive)
+      (load-file "~/.emacs.d/init.el"))
+    (defun revert-buffer-no-confirm ()
+      "Revert buffer without confirmation."
+      (interactive) (revert-buffer t t))
+    :config
+    (setq visible-bell t)
+    (if init-file-debug
+        (setq warning-minimum-level :debug)
+      (setq warning-minimum-level :emergency))
+    ;; Space around the windows
+    ;; (fringe-mode '(0 . 0))
+    (set-fringe-style '(8 . 8))
+    ;; Terminal transparency
+    (face-spec-set 'default
+                   '((((type tty)) :background "unspecified-bg")))
+    ;; Remember line number
+    (if (fboundp #'save-place-mode)
+        (save-place-mode +1)
+      (setq-default save-place t))
+    ;; Mimetypes
+    (setq mailcap-user-mime-data
+          '((type . "application/pdf")
+            (viewer . pdf-view-mode)))
+    :bind
+    (("C-c R" . my-reload-emacs))
+    ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts
+    ("C-c C-r" . revert-buffer-no-confirm)
+    :hook (before-save . delete-trailing-whitespace)
+    )
 #+END_SRC
 
 * Evil Configuration

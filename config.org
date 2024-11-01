@@ -24,9 +24,9 @@
   - [[#no-littering][No Littering]]
 - [[#to-make-it-pretty][To make it pretty]]
   - [[#themes][Themes]]
+  - [[#dashboard][Dashboard]]
   - [[#modeline][Modeline]]
   - [[#minor-mode-menu][Minor Mode Menu]]
-  - [[#dashboard][Dashboard]]
   - [[#get-banners-for-emacs-dashboard][Get banners for emacs dashboard]]
   - [[#ligatures][Ligatures]]
   - [[#miscellaneous][Miscellaneous]]
@@ -34,6 +34,7 @@
   - [[#variables-added-by-custom][Variables added by Custom]]
   - [[#fonts][Fonts]]
 - [[#functions][Functions]]
+  - [[#org-roam-functions][Org-Roam Functions]]
 - [[#use-package-package][Use-Package package]]
 - [[#opening-non-emacs-files][Opening Non-Emacs Files]]
 - [[#completions][Completions]]
@@ -167,7 +168,19 @@ cgn
   (evil-define-key 'normal 'global (kbd "<leader>wR") 'evil-window-rotate-upwards)
 #+END_SRC
 
-End of Evil
+*** Org-Roam Keys
+#+BEGIN_SRC emacs-lisp
+  (evil-define-key 'normal 'global (kbd "<leader>rb" ) 'org-roam-buffer-toggle)
+  (evil-define-key 'normal 'global (kbd "<leader>rf" ) 'org-roam-node-find)
+  (evil-define-key 'normal 'global (kbd "<leader>rg" ) 'org-roam-graph)
+  (evil-define-key 'normal 'global (kbd "<leader>ri" ) 'org-roam-node-insert)
+  (evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
+  (evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
+  ;; Dailies
+  (evil-define-key 'normal 'global (kbd "<leader>rj" ) 'org-roam-dailies-capture-today)
+  #+END_SRC
+
+*** End of Evil
 #+BEGIN_SRC emacs-lisp
   (evil-mode t))
   (use-package evil-commentary
@@ -186,8 +199,13 @@ End of Evil
   (use-package evil-numbers
     :after evil)
 #+END_SRC
+
 * Org Configuration
 #+BEGIN_SRC emacs-lisp
+
+  (use-package org
+    :ensure t
+    :init
     (setq-default
      org-startup-indented t
      org-pretty-entities t
@@ -211,46 +229,164 @@ End of Evil
      org-archive-location "~/org/archive.org::"
      org-agenda-files '("~/org/")
      )
+    :config
+    (require 'org-clock)
 
-    (use-package org
-      :ensure t
-      :config
-      (require 'org-clock)
-      :bind
-      (("C-c c" . org-capture)
-       ("C-c l" . org-store-link)
-       ("C-c a" . org-agenda))
-      :custom
-      (org-todo-keywords
-       '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
-      (org-export-with-drawers nil)
-      (org-export-with-todo-keywords nil)
-      (org-export-with-broken-links t)
-      (org-export-with-toc nil)
-      (org-export-with-smart-quotes t)
-      (org-export-date-timestamp-format "%d %B %Y")
-      (org-list-allow-alphabetical t)
-      (org-capture-bookmark nil)
-      (org-M-RET-may-split-line '((default . nil)))
-      (org-capture-templates
-       '(("f" "Fleeting note" item
-          (file+headline org-default-notes-file "Notes")
-          "- %?")
-         ("t" "New task" entry
-          (file+headline org-default-notes-file "Tasks")
-          "* TODO %i%?")
-         ("a" "Agenda notes" entry
-          (file+datetree "~/org/notes.org")
-          "* %U Agenda notes for %^{Agenda item} \n%?"
-          :clock-in t :clock-resume t :clock-out t)
-         )))
+    ;; Agenda styling
+    (setq
+     org-agenda-tags-column 0
+     org-agenda-block-separator ?─
+     org-agenda-time-grid
+     '((daily today require-timed)
+       (800 1000 1200 1400 1600 1800 2000)
+       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+     org-agenda-current-time-string ""
+     org-agenda-hide-tags-regexp ".*"
+     )
+
+    (add-hook 'org-agenda-mode-hook (lambda () (olivetti-mode)))
+
+    (setq org-agenda-custom-commands
+          '(("c" "Classes this Week"
+             ((agenda "" ((org-agenda-span '7)              ;; Show 7-day agenda
+                          (org-agenda-start-day "+0")       ;; Start from today
+                          (org-agenda-overriding-header "Classes this Week")
+                          (org-agenda-skip-function         ;; Skip entries without certain tags
+                           '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+            ("C" "Classes this Fortnight"
+             ((agenda "" ((org-agenda-span '14)              ;; Show 14-day agenda
+                          (org-agenda-start-day "+0")       ;; Start from today
+                          (org-agenda-overriding-header "Classes in the Next Two Weeks")
+                          (org-agenda-skip-function         ;; Skip entries without certain tags
+                           '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+
+            ("d" agenda "Today's Deadlines"
+             (
+              (org-agenda-span 'day)
+              (org-agenda-skip-function '(org-agenda-skip-deadline-if-not-today))
+              (org-agenda-entry-types '(:deadline))
+              (org-agenda-overriding-header "Today's Deadlines ")
+              ))
+  	  ("t" "Today's tasks"
+             ((agenda "" (
+  			(org-agenda-span 'day)
+                          (org-deadline-warning-days 0)
+                          (org-scheduled-past-days 0)
+  			(org-agenda-overriding-header "Today's Tasks")
+  			))))
+            ))
+
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((python . t)))
+    :bind
+    (("C-c c" . org-capture)
+     ("C-c l" . org-store-link)
+     ("C-c a" . org-agenda))
+    :custom
+    (org-todo-keywords
+     '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
+    (org-export-with-drawers nil)
+    (org-export-with-todo-keywords nil)
+    (org-export-with-broken-links t)
+    (org-export-with-toc nil)
+    (org-export-with-smart-quotes t)
+    (org-export-date-timestamp-format "%d %B %Y")
+    (org-list-allow-alphabetical t)
+    (org-capture-bookmark nil)
+    (org-M-RET-may-split-line '((default . nil)))
+    (org-capture-templates
+     '(("f" "Fleeting note" item
+        (file+headline org-default-notes-file "Notes")
+        "- %?")
+       ("t" "New task" entry
+        (file+headline org-default-notes-file "Tasks")
+        "* TODO %i%?")
+       ("a" "Agenda notes" entry
+        (file+datetree "~/org/notes.org")
+        "* %U Agenda notes for %^{Agenda item} \n%?"
+        :clock-in t :clock-resume t :clock-out t)
+       )))
 #+END_SRC
 
 ** Org Extensions
+
+
+*** Org Super Agenda
 #+BEGIN_SRC emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((python . t)))
+  (use-package org-super-agenda
+    :config
+    (setq org-super-agenda-groups
+        '(;; Each group has an implicit boolean OR operator between its selectors
+          (:name "! Overdue " ; optional section name
+                 :scheduled past
+                 :order 2
+                 :face 'error
+                   )
+            (:name "Events "
+                 :order 2
+                 )
+            (:name "Teaching "
+                 :order 2
+                 :and(:not (:tag "business"))
+                 )
+          )
+  	))
+#+END_SRC
+
+*** Org Download
+#+BEGIN_SRC emacs-lisp
+  (use-package org-download)
+#+END_SRC
+
+*** Org Fancy Priorities
+#+BEGIN_SRC emacs-lisp
+(use-package org-fancy-priorities
+  :diminish
+  :ensure t
+  :hook (org-mode . org-fancy-priorities-mode)
+  :config
+  (setq org-fancy-priorities-list '("🅰" "🅱" "🅲" "🅳" "🅴")))
+#+END_SRC
+
+*** Pretty Tags
+#+BEGIN_SRC emacs-lisp
+(use-package org-pretty-tags
+  :diminish org-pretty-tags-mode
+  :ensure t
+  :config
+  (setq org-pretty-tags-surrogate-strings
+        '(("work"  . "⚒")))
+
+  (org-pretty-tags-global-mode))
+#+END_SRC
+
+*** Org-Roam
+#+BEGIN_SRC emacs-lisp
+  (use-package org-roam
+    :ensure t
+    :custom
+    (org-roam-directory "~/org/roam")
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+           ("C-c n f" . org-roam-node-find)
+           ("C-c n g" . org-roam-graph)
+           ("C-c n i" . org-roam-node-insert)
+           ("C-c n c" . org-roam-capture)
+           ;; Dailies
+           ("C-c n j" . org-roam-dailies-capture-today))
+    :config
+    (setq org-roam-graph-executable
+        (executable-find "neato"))
+    (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+    (setq org-roam-completion-system 'ido)
+    (org-roam-db-autosync-mode)
+    ;; If using org-roam-protocol
+    (require 'org-roam-protocol)
+    )
+#+END_SRC
+
+*** Org Re-Reveal
+#+BEGIN_SRC emacs-lisp
   (use-package org-re-reveal
     :config
     (setq org-re-reveal-root "~/share/Teaching/reveal.js-master"
@@ -287,40 +423,6 @@ End of Evil
           )
     (add-to-list 'org-re-reveal-plugin-config '(chalkboard "RevealChalkboard" "plugin/chalkboard/plugin.js"))
     )
-  (use-package org-download)
-  (use-package org-roam
-    :ensure t
-    :custom
-    (org-roam-directory "~/.emacs.d/org")
-    :bind (("C-c n l" . org-roam-buffer-toggle)
-           ("C-c n f" . org-roam-node-find)
-           ("C-c n g" . org-roam-graph)
-           ("C-c n i" . org-roam-node-insert)
-           ("C-c n c" . org-roam-capture)
-           ;; Dailies
-           ("C-c n j" . org-roam-dailies-capture-today))
-    :config
-    ;; If you're using a vertical completion framework, you might want a more informative completion interface
-    (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
-    (org-roam-db-autosync-mode)
-    ;; If using org-roam-protocol
-    (require 'org-roam-protocol))
-
-  (use-package org-fancy-priorities
-  :diminish
-  :ensure t
-  :hook (org-mode . org-fancy-priorities-mode)
-  :config
-  (setq org-fancy-priorities-list '("🅰" "🅱" "🅲" "🅳" "🅴")))
-
-  (use-package org-pretty-tags
-  :diminish org-pretty-tags-mode
-  :ensure t
-  :config
-  (setq org-pretty-tags-surrogate-strings
-        '(("work"  . "⚒")))
-
-  (org-pretty-tags-global-mode))
 #+END_SRC
 
 * Miscellaneous Configuration
@@ -422,36 +524,6 @@ End of Evil
     )
 #+END_SRC
 
-** Modeline
-#+BEGIN_SRC emacs-lisp
-  (use-package doom-modeline
-    :config
-    (doom-modeline-mode)
-    :custom
-    ;; Don't compact font caches during GC. Windows Laggy Issue
-    (inhibit-compacting-font-caches t)
-    (doom-modeline-major-mode-icon t)
-    (doom-modeline-major-mode-color-icon t)
-    (doom-modeline-icon (display-graphic-p))
-    (doom-modeline-checker-simple-format t)
-    (doom-line-numbers-style 'relative)
-    (doom-modeline-buffer-file-name-style 'relative-to-project)
-    (doom-modeline-buffer-modification-icon t)
-    (doom-modeline-buffer-encoding nil)
-    (doom-modeline-buffer-state-icon t)
-    (doom-modeline-flycheck-icon t)
-    (doom-modeline-height 35))
-#+END_SRC
-
-** Minor Mode Menu
-#+BEGIN_SRC emacs-lisp
-  (use-package minions
-    :delight " 𝛁"
-    :hook (doom-modeline-mode . minions-mode)
-    :config
-    (minions-mode 1)
-    (setq minions-mode-line-lighter "[+]"))
-#+END_SRC
 ** Dashboard
 #+BEGIN_SRC emacs-lisp
     (use-package dashboard
@@ -492,6 +564,36 @@ End of Evil
       :custom-face
       (dashboard-heading ((t (:foreground nil :weight bold)))) ; "#f1fa8c"
       )
+#+END_SRC
+** Modeline
+#+BEGIN_SRC emacs-lisp
+  (use-package doom-modeline
+    :config
+    (doom-modeline-mode)
+    :custom
+    ;; Don't compact font caches during GC. Windows Laggy Issue
+    (inhibit-compacting-font-caches t)
+    (doom-modeline-major-mode-icon t)
+    (doom-modeline-major-mode-color-icon t)
+    (doom-modeline-icon (display-graphic-p))
+    (doom-modeline-checker-simple-format t)
+    (doom-line-numbers-style 'relative)
+    (doom-modeline-buffer-file-name-style 'relative-to-project)
+    (doom-modeline-buffer-modification-icon t)
+    (doom-modeline-buffer-encoding nil)
+    (doom-modeline-buffer-state-icon t)
+    (doom-modeline-flycheck-icon t)
+    (doom-modeline-height 35))
+#+END_SRC
+
+** Minor Mode Menu
+#+BEGIN_SRC emacs-lisp
+  (use-package minions
+    :delight " 𝛁"
+    :hook (doom-modeline-mode . minions-mode)
+    :config
+    (minions-mode 1)
+    (setq minions-mode-line-lighter "[+]"))
 #+END_SRC
 ** TODO Get banners for emacs dashboard
 (dashboard-startup-banner (concat user-emacs-directory "path/to/pic.png"))
@@ -594,17 +696,7 @@ End of Evil
 
      ;; Org styling, hide markup etc.
      org-hide-emphasis-markers t
-     org-pretty-entities t
-
-     ;; Agenda styling
-     org-agenda-tags-column 0
-     org-agenda-block-separator ?─
-     org-agenda-time-grid
-     '((daily today require-timed)
-       (800 1000 1200 1400 1600 1800 2000)
-       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-     org-agenda-current-time-string
-     "◀── now ─────────────────────────────────────────────────")
+     org-pretty-entities t)
 
     ;; Ellipsis styling
     (setq org-ellipsis "…")
@@ -614,8 +706,6 @@ End of Evil
 * Custom Set Things
 ** Variables added by Custom
 #+BEGIN_SRC emacs-lisp
-
-#+END_SRC
 (custom-set-variables
    ;; custom-set-variables was added by Custom.
    ;; If you edit it by hand, you could mess it up, so be careful.
@@ -737,7 +827,24 @@ End of Evil
          (find-file file-path)
          (current-buffer))))))
  #+END_SRC
+** Org-Roam Functions
+#+BEGIN_SRC emacs-lisp
+  (defun my/org-roam-filter-by-tag (tag-name)
+      (lambda (node)
+          (member tag-name (org-roam-node-tags node))))
 
+  (defun my/org-roam-find-project ()
+      (interactive)
+      ;; Select a project file to open, creating it if necessary
+      (org-roam-node-find nil nil
+          (my/org-roam-filter-by-tag "projects")))
+
+  (defun my/org-roam-find-students ()
+    (interactive)
+    ;; Select a project file to open, creating it if necessary
+    (org-roam-node-find nil nil
+        (my/org-roam-filter-by-tag "students")))
+#+END_SRC
 * Use-Package package
 #+BEGIN_SRC emacs-lisp
   (use-package package

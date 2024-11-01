@@ -88,6 +88,15 @@
 (evil-define-key 'normal 'global (kbd "<leader>wr") 'evil-window-rotate-downwards)
 (evil-define-key 'normal 'global (kbd "<leader>wR") 'evil-window-rotate-upwards)
 
+(evil-define-key 'normal 'global (kbd "<leader>rb" ) 'org-roam-buffer-toggle)
+(evil-define-key 'normal 'global (kbd "<leader>rf" ) 'org-roam-node-find)
+(evil-define-key 'normal 'global (kbd "<leader>rg" ) 'org-roam-graph)
+(evil-define-key 'normal 'global (kbd "<leader>ri" ) 'org-roam-node-insert)
+(evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
+(evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
+;; Dailies
+(evil-define-key 'normal 'global (kbd "<leader>rj" ) 'org-roam-dailies-capture-today)
+
 (evil-mode t))
 (use-package evil-commentary
   :after evil
@@ -105,34 +114,82 @@
 (use-package evil-numbers
   :after evil)
 
-(setq-default
- org-startup-indented t
- org-pretty-entities t
- org-use-sub-superscripts "{}"
- org-hide-emphasis-markers t
- org-startup-with-inline-images t
- org-image-actual-width '(300)
- )
-(setq
- time-stamp-active t
- time-stamp-start "#\\+lastmod:[ \t]*"
- time-stamp-end "$"
- time-stamp-format "[%04Y-%02m-%02d %:A]"
- org-clock-persist t
- org-clock-in-resume t
- org-clock-out-when-done t
- org-clock-report-include-clocking-task t
- org-html-validation-link nil
- org-log-done 'time
- org-log-repeat 'time
- org-archive-location "~/org/archive.org::"
- org-agenda-files '("~/org/")
- )
-
 (use-package org
   :ensure t
+  :init
+  (setq-default
+   org-startup-indented t
+   org-pretty-entities t
+   org-use-sub-superscripts "{}"
+   org-hide-emphasis-markers t
+   org-startup-with-inline-images t
+   org-image-actual-width '(300)
+   )
+  (setq
+   time-stamp-active t
+   time-stamp-start "#\\+lastmod:[ \t]*"
+   time-stamp-end "$"
+   time-stamp-format "[%04Y-%02m-%02d %:A]"
+   org-clock-persist t
+   org-clock-in-resume t
+   org-clock-out-when-done t
+   org-clock-report-include-clocking-task t
+   org-html-validation-link nil
+   org-log-done 'time
+   org-log-repeat 'time
+   org-archive-location "~/org/archive.org::"
+   org-agenda-files '("~/org/")
+   )
   :config
   (require 'org-clock)
+
+  ;; Agenda styling
+  (setq
+   org-agenda-tags-column 0
+   org-agenda-block-separator ?─
+   org-agenda-time-grid
+   '((daily today require-timed)
+     (800 1000 1200 1400 1600 1800 2000)
+     " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+   org-agenda-current-time-string ""
+   org-agenda-hide-tags-regexp ".*"
+   )
+
+  (add-hook 'org-agenda-mode-hook (lambda () (olivetti-mode)))
+
+  (setq org-agenda-custom-commands
+        '(("c" "Classes this Week"
+           ((agenda "" ((org-agenda-span '7)              ;; Show 7-day agenda
+                        (org-agenda-start-day "+0")       ;; Start from today
+                        (org-agenda-overriding-header "Classes this Week")
+                        (org-agenda-skip-function         ;; Skip entries without certain tags
+                         '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+          ("C" "Classes this Fortnight"
+           ((agenda "" ((org-agenda-span '14)              ;; Show 14-day agenda
+                        (org-agenda-start-day "+0")       ;; Start from today
+                        (org-agenda-overriding-header "Classes in the Next Two Weeks")
+                        (org-agenda-skip-function         ;; Skip entries without certain tags
+                         '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+
+          ("d" agenda "Today's Deadlines"
+           (
+            (org-agenda-span 'day)
+            (org-agenda-skip-function '(org-agenda-skip-deadline-if-not-today))
+            (org-agenda-entry-types '(:deadline))
+            (org-agenda-overriding-header "Today's Deadlines ")
+            ))
+	  ("t" "Today's tasks"
+           ((agenda "" (
+			(org-agenda-span 'day)
+                        (org-deadline-warning-days 0)
+                        (org-scheduled-past-days 0)
+			(org-agenda-overriding-header "Today's Tasks")
+			))))
+          ))
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)))
   :bind
   (("C-c c" . org-capture)
    ("C-c l" . org-store-link)
@@ -162,9 +219,64 @@
       :clock-in t :clock-resume t :clock-out t)
      )))
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((python . t)))
+(use-package org-super-agenda
+  :config
+  (setq org-super-agenda-groups
+      '(;; Each group has an implicit boolean OR operator between its selectors
+        (:name "! Overdue " ; optional section name
+               :scheduled past
+               :order 2
+               :face 'error
+                 )
+          (:name "Events "
+               :order 2
+               )
+          (:name "Teaching "
+               :order 2
+               :and(:not (:tag "business"))
+               )
+        )
+	))
+
+(use-package org-download)
+
+(use-package org-fancy-priorities
+  :diminish
+  :ensure t
+  :hook (org-mode . org-fancy-priorities-mode)
+  :config
+  (setq org-fancy-priorities-list '("🅰" "🅱" "🅲" "🅳" "🅴")))
+
+(use-package org-pretty-tags
+  :diminish org-pretty-tags-mode
+  :ensure t
+  :config
+  (setq org-pretty-tags-surrogate-strings
+        '(("work"  . "⚒")))
+
+  (org-pretty-tags-global-mode))
+
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory "~/org/roam")
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today))
+  :config
+  (setq org-roam-graph-executable
+      (executable-find "neato"))
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+  (setq org-roam-completion-system 'ido)
+  (org-roam-db-autosync-mode)
+  ;; If using org-roam-protocol
+  (require 'org-roam-protocol)
+  )
+
 (use-package org-re-reveal
   :config
   (setq org-re-reveal-root "~/share/Teaching/reveal.js-master"
@@ -201,40 +313,6 @@
         )
   (add-to-list 'org-re-reveal-plugin-config '(chalkboard "RevealChalkboard" "plugin/chalkboard/plugin.js"))
   )
-(use-package org-download)
-(use-package org-roam
-  :ensure t
-  :custom
-  (org-roam-directory "~/.emacs.d/org")
-  :bind (("C-c n l" . org-roam-buffer-toggle)
-         ("C-c n f" . org-roam-node-find)
-         ("C-c n g" . org-roam-graph)
-         ("C-c n i" . org-roam-node-insert)
-         ("C-c n c" . org-roam-capture)
-         ;; Dailies
-         ("C-c n j" . org-roam-dailies-capture-today))
-  :config
-  ;; If you're using a vertical completion framework, you might want a more informative completion interface
-  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
-  (org-roam-db-autosync-mode)
-  ;; If using org-roam-protocol
-  (require 'org-roam-protocol))
-
-(use-package org-fancy-priorities
-:diminish
-:ensure t
-:hook (org-mode . org-fancy-priorities-mode)
-:config
-(setq org-fancy-priorities-list '("🅰" "🅱" "🅲" "🅳" "🅴")))
-
-(use-package org-pretty-tags
-:diminish org-pretty-tags-mode
-:ensure t
-:config
-(setq org-pretty-tags-surrogate-strings
-      '(("work"  . "⚒")))
-
-(org-pretty-tags-global-mode))
 
 (use-package man
 :bind (
@@ -293,31 +371,6 @@
   (load-theme 'catppuccin :no-confirm)
   )
 
-(use-package doom-modeline
-  :config
-  (doom-modeline-mode)
-  :custom
-  ;; Don't compact font caches during GC. Windows Laggy Issue
-  (inhibit-compacting-font-caches t)
-  (doom-modeline-major-mode-icon t)
-  (doom-modeline-major-mode-color-icon t)
-  (doom-modeline-icon (display-graphic-p))
-  (doom-modeline-checker-simple-format t)
-  (doom-line-numbers-style 'relative)
-  (doom-modeline-buffer-file-name-style 'relative-to-project)
-  (doom-modeline-buffer-modification-icon t)
-  (doom-modeline-buffer-encoding nil)
-  (doom-modeline-buffer-state-icon t)
-  (doom-modeline-flycheck-icon t)
-  (doom-modeline-height 35))
-
-(use-package minions
-  :delight " 𝛁"
-  :hook (doom-modeline-mode . minions-mode)
-  :config
-  (minions-mode 1)
-  (setq minions-mode-line-lighter "[+]"))
-
 (use-package dashboard
   :bind (:map dashboard-mode-map
               ;; ("j" . nil)
@@ -356,6 +409,31 @@
   :custom-face
   (dashboard-heading ((t (:foreground nil :weight bold)))) ; "#f1fa8c"
   )
+
+(use-package doom-modeline
+  :config
+  (doom-modeline-mode)
+  :custom
+  ;; Don't compact font caches during GC. Windows Laggy Issue
+  (inhibit-compacting-font-caches t)
+  (doom-modeline-major-mode-icon t)
+  (doom-modeline-major-mode-color-icon t)
+  (doom-modeline-icon (display-graphic-p))
+  (doom-modeline-checker-simple-format t)
+  (doom-line-numbers-style 'relative)
+  (doom-modeline-buffer-file-name-style 'relative-to-project)
+  (doom-modeline-buffer-modification-icon t)
+  (doom-modeline-buffer-encoding nil)
+  (doom-modeline-buffer-state-icon t)
+  (doom-modeline-flycheck-icon t)
+  (doom-modeline-height 35))
+
+(use-package minions
+  :delight " 𝛁"
+  :hook (doom-modeline-mode . minions-mode)
+  :config
+  (minions-mode 1)
+  (setq minions-mode-line-lighter "[+]"))
 
 (use-package ligature
   :config
@@ -413,26 +491,12 @@
 
    ;; Org styling, hide markup etc.
    org-hide-emphasis-markers t
-   org-pretty-entities t
-
-   ;; Agenda styling
-   org-agenda-tags-column 0
-   org-agenda-block-separator ?─
-   org-agenda-time-grid
-   '((daily today require-timed)
-     (800 1000 1200 1400 1600 1800 2000)
-     " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-   org-agenda-current-time-string
-   "◀── now ─────────────────────────────────────────────────")
+   org-pretty-entities t)
 
   ;; Ellipsis styling
   (setq org-ellipsis "…")
   (set-face-attribute 'org-ellipsis nil :inherit 'default :box nil)
   )
-
-
-
-
 
 (defun aorst/font-installed-p (font-name)
   "Check if font with FONT-NAME is available."
@@ -536,6 +600,22 @@
      (save-window-excursion
        (find-file file-path)
        (current-buffer))))))
+
+(defun my/org-roam-filter-by-tag (tag-name)
+    (lambda (node)
+        (member tag-name (org-roam-node-tags node))))
+
+(defun my/org-roam-find-project ()
+    (interactive)
+    ;; Select a project file to open, creating it if necessary
+    (org-roam-node-find nil nil
+        (my/org-roam-filter-by-tag "projects")))
+
+(defun my/org-roam-find-students ()
+  (interactive)
+  ;; Select a project file to open, creating it if necessary
+  (org-roam-node-find nil nil
+      (my/org-roam-filter-by-tag "students")))
 
 (use-package package
   :config

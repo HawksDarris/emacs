@@ -33,7 +33,7 @@
   (setq mailcap-user-mime-data
         '((type . "application/pdf")
           (viewer . pdf-view-mode)))
-  ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
   :bind
   (("C-c R" . my-reload-emacs))
   ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts
@@ -382,6 +382,8 @@
   (add-hook 'dashboard-mode-hook (lambda () (setq show-trailing-whitespace nil)))
   (hl-line-mode t)
   (global-hl-line-mode t)
+  :custom-face
+  (dashboard-heading ((t (:foreground nil :weight bold)))) ; "#f1fa8c"
   :custom
   (dashboard-set-navigator t)
   (dashboard-center-content t)
@@ -405,9 +407,7 @@
                      (bookmarks      . 5)
                      (registers      . 5)))
   (setq dashboard-agenda-sort-strategy '(todo-state-up time-up))
-
-  :custom-face
-  (dashboard-heading ((t (:foreground nil :weight bold)))) ; "#f1fa8c"
+  (dashboard-refresh-buffer)
   )
 
 (use-package doom-modeline

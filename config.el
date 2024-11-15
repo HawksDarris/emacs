@@ -45,16 +45,18 @@
   :init
 (setq
  evil-want-keybinding nil
+ evil-want-C-u-scroll t
+ evil-want-C-i-jump nil
  evil-want-Y-yank-to-eol t
  evil-want-integration t
  evil-vsplit-window-right t
  evil-split-window-below t
  evil-search-module 'evil-search
- evil-want-C-i-jump nil
  )
 :demand t
 :bind (("<escape>" . keyboard-escape-quit))
 :config
+(evil-mode t)
 (evil-set-undo-system 'undo-redo)
 (evil-set-leader 'normal (kbd "SPC"))
 
@@ -69,12 +71,9 @@
 
 ;; buffers
 (evil-define-key 'normal 'global (kbd "<leader>bb") 'switch-to-buffer)
-(evil-define-key 'normal 'global (kbd "<leader>bn") 'next-buffer)
-(evil-define-key 'normal 'global (kbd "<leader>bp") 'previous-buffer)
 (evil-define-key 'normal 'global (kbd "<leader>bk") 'kill-buffer)
 (evil-define-key 'normal 'global (kbd "<leader>bx") 'scratch-buffer)
 (evil-define-key 'normal 'global (kbd "<leader>bs") 'save-buffer)
-(evil-define-key 'normal 'global (kbd "<leader>bl") 'list-buffers)
 
 (evil-define-key 'normal 'global (kbd "<leader>ff") 'ido-find-file-in-dir)
 (evil-define-key 'normal 'global (kbd "<leader>fr") 'recentf-open)
@@ -88,16 +87,8 @@
 (evil-define-key 'normal 'global (kbd "<leader>wr") 'evil-window-rotate-downwards)
 (evil-define-key 'normal 'global (kbd "<leader>wR") 'evil-window-rotate-upwards)
 
-(evil-define-key 'normal 'global (kbd "<leader>rb" ) 'org-roam-buffer-toggle)
-(evil-define-key 'normal 'global (kbd "<leader>rf" ) 'org-roam-node-find)
-(evil-define-key 'normal 'global (kbd "<leader>rg" ) 'org-roam-graph)
-(evil-define-key 'normal 'global (kbd "<leader>ri" ) 'org-roam-node-insert)
-(evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
-(evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
-;; Dailies
-(evil-define-key 'normal 'global (kbd "<leader>rj" ) 'org-roam-dailies-capture-today)
+)
 
-(evil-mode t))
 (use-package evil-commentary
   :after evil
   :config
@@ -108,6 +99,7 @@
   :config
   (evil-collection-init))
 (use-package evil-surround
+  :after evil
   :config
   (global-evil-surround-mode t)
   :after evil)
@@ -140,6 +132,7 @@
    org-archive-location "~/org/archive.org::"
    org-agenda-files '("~/org/")
    )
+
   :config
   (require 'org-clock)
 
@@ -193,7 +186,9 @@
   :bind
   (("C-c c" . org-capture)
    ("C-c l" . org-store-link)
-   ("C-c a" . org-agenda))
+   ("C-c a" . org-agenda)
+   ("C-c ," . org-timestamp-inactive)
+   )
   :custom
   (org-todo-keywords
    '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
@@ -260,21 +255,31 @@
   :ensure t
   :custom
   (org-roam-directory "~/org/roam")
-  :bind (("C-c n l" . org-roam-buffer-toggle)
+  :bind (
+	   ("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
          ("C-c n g" . org-roam-graph)
          ("C-c n i" . org-roam-node-insert)
          ("C-c n c" . org-roam-capture)
          ;; Dailies
-         ("C-c n j" . org-roam-dailies-capture-today))
+         ("C-c n j" . org-roam-dailies-capture-today)
+	     )
   :config
   (setq org-roam-graph-executable
-      (executable-find "neato"))
+	(executable-find "neato"))
   (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   (setq org-roam-completion-system 'ido)
   (org-roam-db-autosync-mode)
   ;; If using org-roam-protocol
   (require 'org-roam-protocol)
+  (evil-define-key 'normal 'global (kbd "<leader>rb" ) 'org-roam-buffer-toggle)
+  (evil-define-key 'normal 'global (kbd "<leader>rf" ) 'org-roam-node-find)
+  (evil-define-key 'normal 'global (kbd "<leader>rg" ) 'org-roam-graph)
+  (evil-define-key 'normal 'global (kbd "<leader>ri" ) 'org-roam-node-insert)
+  (evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
+  (evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
+  ;; Dailies
+  (evil-define-key 'normal 'global (kbd "<leader>rj" ) 'org-roam-dailies-capture-today)
   )
 
 (use-package org-re-reveal
@@ -298,7 +303,7 @@
                                                  "respondToHashChanges: true"
                                                  "fragmentInURL: true"
                                                  "touch: true"
-                                               "dependencies: [ {src: '../node_modules/revealjs-animated/dist/revealjs-animated.js', async: true} ]"
+						 "dependencies: [ {src: '../node_modules/revealjs-animated/dist/revealjs-animated.js', async: true} ]"
                                                  ;; "RevealChalkboard"
                                                  ;; "RevealCustomControls"
                                                  ;; "customcontrols: { controls: [ { icon: '<i class=\"fa fa-pen-square\"></i>'"
@@ -315,17 +320,17 @@
   )
 
 (use-package man
-:bind (
-:map Man-mode-map
-("q" . kill-this-buffer))
-:custom
-(Man-notify-method 'newframe))
+  :bind (
+	 :map Man-mode-map
+	 ("q" . kill-this-buffer))
+  :custom
+  (Man-notify-method 'newframe))
 
 (use-package outline
-:hook ((prog-mode . outline-minor-mode))
-:bind (:map outline-minor-mode-map
-([C-tab] . outline-cycle)
-("<backtab>" . outline-cycle-buffer)))
+  :hook ((prog-mode . outline-minor-mode))
+  :bind (:map outline-minor-mode-map
+	      ([C-tab] . outline-cycle)
+	      ("<backtab>" . outline-cycle-buffer)))
 
 (use-package no-littering
   :init
@@ -335,29 +340,71 @@
         `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
   )
 
-(add-to-list 'default-frame-alist '(font . "CaskaydiaCove Nerd Font 14"))
-(use-package nerd-icons)
-(use-package olivetti
-  ;; :hook ((text-mode         . olivetti-mode)
-  ;;        (prog-mode         . olivetti-mode)
-  ;;        (Info-mode         . olivetti-mode)
-  ;;        (org-mode          . olivetti-mode)
-  ;;        (nov-mode          . olivetti-mode)
-  ;;        (markdown-mode     . olivetti-mode)
-  ;;        (mu4e-view-mode    . olivetti-mode)
-  ;;        (elfeed-show-mode  . olivetti-mode)
-  ;;        (mu4e-compose-mode . olivetti-mode))
-  :custom
-  (olivetti-body-width 80)
-  :delight " ⊗"
-  :config
-  (olivetti-mode t)
-  ) ; Ⓐ ⊛
+(defvar efs/default-font-size 180)
+(defvar efs/default-variable-font-size 180)
+  (defun efs/org-font-setup ()
+    ;; Replace list hyphen with dot
+    (font-lock-add-keywords 'org-mode
+                            '(("^ *\\([-]\\) "
+                               (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+    ;; Set faces for heading levels
+    (dolist (face '((org-level-1 . 1.2)
+                    (org-level-2 . 1.1)
+                    (org-level-3 . 1.05)
+                    (org-level-4 . 1.0)
+                    (org-level-5 . 1.1)
+                    (org-level-6 . 1.1)
+                    (org-level-7 . 1.1)
+                    (org-level-8 . 1.1)))
+      (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+
+    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+    (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+
+  (add-to-list 'default-frame-alist '(font . "CaskaydiaCove Nerd Font 14"))
+
+  (set-face-attribute 'default nil :font "FiraCode Nerd Font Mono Ret" :height efs/default-font-size)
+
+  ;; Set the fixed pitch face
+  (set-face-attribute 'fixed-pitch nil :font "FiraCode Nerd Font Mono Ret" :height efs/default-font-size)
+
+  ;; Set the variable pitch face
+  ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
+  (set-face-attribute 'variable-pitch nil :font "NotoSansM Nerd Font" :height efs/default-font-size)
+
+
+  (use-package nerd-icons)
+
+  (use-package olivetti
+    :hook ((text-mode         . olivetti-mode)
+           (prog-mode         . olivetti-mode)
+           (Info-mode         . olivetti-mode)
+           (org-mode          . olivetti-mode)
+           (nov-mode          . olivetti-mode)
+           (markdown-mode     . olivetti-mode)
+           (mu4e-view-mode    . olivetti-mode)
+           (elfeed-show-mode  . olivetti-mode)
+           (mu4e-compose-mode . olivetti-mode))
+    :custom
+    (olivetti-body-width 80)
+    :delight " ⊗"
+    :config
+    (olivetti-mode t)
+    ) ; Ⓐ ⊛
 
 (use-package gruvbox-theme
-    :config
-    (load-theme 'gruvbox-dark-soft :no-confirm)
-    )
+  ;; :config
+  ;; (load-theme 'gruvbox-dark-soft :no-confirm)
+  )
+(use-package doom-themes
+  :init (load-theme 'doom-dracula t))
 
 (defun cycle-themes ()
   (interactive)
@@ -410,12 +457,13 @@
   (dashboard-refresh-buffer)
   )
 
+;; (use-package all-the-icons)
 (use-package doom-modeline
-  :config
-  (doom-modeline-mode)
+  :init (doom-modeline-mode 1)
   :custom
   ;; Don't compact font caches during GC. Windows Laggy Issue
   (inhibit-compacting-font-caches t)
+  (doom-modeline-height 15)
   (doom-modeline-major-mode-icon t)
   (doom-modeline-major-mode-color-icon t)
   (doom-modeline-icon (display-graphic-p))
@@ -569,7 +617,7 @@
   (isamert/toggle-side-buffer-with-file "~/bullet.org"))
 
 (defun isamert/buffer-visible-p (buffer)
- "Check if given BUFFER is visible or not.  BUFFER is a string representing the buffer name."
+  "Check if given BUFFER is visible or not.  BUFFER is a string representing the buffer name."
   (or (eq buffer (window-buffer (selected-window))) (get-buffer-window buffer)))
 
 (defun isamert/display-buffer-in-side-window (buffer)
@@ -594,28 +642,28 @@
   "Toggle FILE-PATH in a side buffer. The buffer is opened in side window so it can't be accidentaly removed."
   (interactive)
   (let ((fname (file-name-nondirectory file-path)))
-  (if (isamert/buffer-visible-p fname)
-      (isamert/remove-window-with-buffer fname)
-    (isamert/display-buffer-in-side-window
-     (save-window-excursion
-       (find-file file-path)
-       (current-buffer))))))
+    (if (isamert/buffer-visible-p fname)
+	(isamert/remove-window-with-buffer fname)
+      (isamert/display-buffer-in-side-window
+       (save-window-excursion
+	 (find-file file-path)
+	 (current-buffer))))))
 
 (defun my/org-roam-filter-by-tag (tag-name)
-    (lambda (node)
-        (member tag-name (org-roam-node-tags node))))
+  (lambda (node)
+    (member tag-name (org-roam-node-tags node))))
 
 (defun my/org-roam-find-project ()
-    (interactive)
-    ;; Select a project file to open, creating it if necessary
-    (org-roam-node-find nil nil
-        (my/org-roam-filter-by-tag "projects")))
+  (interactive)
+  ;; Select a project file to open, creating it if necessary
+  (org-roam-node-find nil nil
+		      (my/org-roam-filter-by-tag "projects")))
 
 (defun my/org-roam-find-students ()
   (interactive)
   ;; Select a project file to open, creating it if necessary
   (org-roam-node-find nil nil
-      (my/org-roam-filter-by-tag "students")))
+		      (my/org-roam-filter-by-tag "students")))
 
 (use-package package
   :config
@@ -670,18 +718,18 @@
               (corfu-mode))))
 
 (use-package company
-  :ensure t
+  :after lsp-mode
+  :hook (lsp-mode . company-mode)
+  :bind (:map company-active-map
+              ("<tab>" . company-complete-selection))
+  (:map lsp-mode-map
+        ("<tab>" . company-indent-or-complete-common))
   :custom
-  (company-idle-delay 0.5)
-  :bind
-  (:map company-active-map
-        ("C-j". company-select-next)
-        ("C-k". company-select-previous)
-        ("M-<". company-select-first)
-        ("M-<". company-select-last))
-  (:map company-mode-map
-        ("<tab>". tab-indent-or-complete)
-        ("TAB". tab-indent-or-complete)))
+  (company-minimum-prefix-length 1)
+  (company-idle-delay 0.0))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
 
 (use-package yasnippet
   :ensure t
@@ -691,6 +739,61 @@
   (add-hook 'prog-mode-hook 'yas-minor-mode)
   (add-hook 'text-mode-hook 'yas-minor-mode)
   (yas-global-mode 1))
+
+(use-package ivy
+  :diminish
+  :bind (
+	 ("C-s" . swiper)
+         :map ivy-minibuffer-map
+         ("TAB" . ivy-alt-done)
+         ("C-l" . ivy-alt-done)
+         ("C-j" . ivy-next-line)
+         ("C-k" . ivy-previous-line)
+         :map ivy-switch-buffer-map
+         ("C-k" . ivy-previous-line)
+         ("C-l" . ivy-done)
+         ("C-d" . ivy-switch-buffer-kill)
+         :map ivy-reverse-i-search-map
+         ("C-k" . ivy-previous-line)
+         ("C-d" . ivy-reverse-i-search-kill))
+  :config
+  (ivy-mode 1)
+  )
+
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
+
+(use-package counsel
+  :config
+  (counsel-mode 1)
+  (evil-define-key 'normal 'global (kbd "<leader>bl") 'counsel-switch-buffer)
+  )
+
+(use-package helpful
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable)
+  :bind
+  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . counsel-describe-variable)
+  ([remap describe-key] . helpful-key))
+
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  ;; NOTE: Set this to the folder where you keep your Git repos!
+  (when (file-directory-p "~/Projects/Code")
+    (setq projectile-project-search-path '("~/Projects/Code")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
 
 (use-package magit
   :config
@@ -741,13 +844,13 @@
 (use-package git-timemachine)
 
 (use-package which-key
-  :defer t
-  :delight
   :init (which-key-mode)
+
+  (which-key-setup-minibuffer)
+  :config
   (setq which-key-sort-order 'which-key-key-order-alpha
         which-key-idle 0.5
-        which-key-idle-dely 50)
-  (which-key-setup-minibuffer))
+        which-key-idle-delay 1))
 
 (use-package flycheck
   :hook (prog-mode . flycheck-mode)
@@ -778,6 +881,22 @@
 (use-package flycheck-popup-tip
   :config
   (add-hook 'flycheck-mode-hook 'flycheck-popup-tip-mode))
+
+(use-package general
+  :config
+  (general-create-definer rune/leader-keys
+    :keymaps '(normal insert visual emacs)
+    :prefix "SPC"
+    :global-prefix "C-SPC")
+
+  (rune/leader-keys
+    "t"  '(:ignore t :which-key "toggles")
+    "tt" '(counsel-load-theme :which-key "choose theme")))
+
+(use-package dirvish
+  :config
+  (dirvish-override-dired-mode)
+  )
 
 (use-package fancy-battery
   :config

@@ -18,6 +18,8 @@
   - [[#evil-extensions][Evil Extensions]]
 - [[#org-configuration][Org Configuration]]
   - [[#org-extensions][Org Extensions]]
+  - [[#functions-for-org-mode][Functions for Org Mode]]
+- [[#notmuch-configuration][Notmuch Configuration]]
 - [[#miscellaneous-configuration][Miscellaneous Configuration]]
   - [[#man-mode][Man Mode]]
   - [[#outline][Outline]]
@@ -27,12 +29,10 @@
   - [[#dashboard][Dashboard]]
   - [[#modeline][Modeline]]
   - [[#minor-mode-menu][Minor Mode Menu]]
-  - [[#get-banners-for-emacs-dashboard][Get banners for emacs dashboard]]
   - [[#ligatures][Ligatures]]
   - [[#miscellaneous][Miscellaneous]]
 - [[#custom-set-things][Custom Set Things]]
   - [[#variables-added-by-custom][Variables added by Custom]]
-  - [[#fonts][Fonts]]
 - [[#functions][Functions]]
   - [[#org-roam-functions][Org-Roam Functions]]
 - [[#use-package-package][Use-Package package]]
@@ -47,6 +47,7 @@
   - [[#general][General]]
   - [[#git-configuration][Git Configuration]]
   - [[#helpful][Helpful]]
+  - [[#lsp-mode][LSP-Mode]]
   - [[#projectile][Projectile]]
   - [[#which-key][Which Key]]
 - [[#nice-to-have][Nice to Have]]
@@ -55,16 +56,32 @@
   - [[#highlighting][Highlighting]]
 - [[#native-modes][Native Modes]]
 - [[#writegood-mode][Writegood Mode]]
+- [[#nix-mode][Nix mode]]
 :END:
 
 * Initialization
 #+BEGIN_SRC emacs-lisp
-  (global-set-key (kbd "C-x C-o")
-                  (lambda ()
-                    (interactive)
-                    (flush-lines "^$")
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("elpa" . "https://elpa.gnu.org/packages/")))
+
+  (package-initialize)
+  (unless package-archive-contents
+    (package-refresh-contents))
+
+    ;; Initialize use-package on non-Linux platforms
+  (unless (package-installed-p 'use-package)
+    (package-install 'use-package))
+
+  (require 'use-package)
+  (setq use-package-always-ensure t)
+
+    (global-set-key (kbd "C-x C-o")
+                    (lambda ()
+                      (interactive)
+                      (flush-lines "^$")
+                      )
                     )
-                  )
 #+END_SRC
 
 ** Emacs Use-Package
@@ -196,117 +213,125 @@
 
 * Org Configuration
 #+BEGIN_SRC emacs-lisp
+    (use-package org
+      :ensure t
+      :init
+      (setq-default
+       org-startup-indented t
+       org-pretty-entities t
+       org-use-sub-superscripts "{}"
+       org-hide-emphasis-markers t
+       org-startup-with-inline-images t
+       org-image-actual-width '(300)
+       )
+      (setq
+       time-stamp-active t
+       time-stamp-start "#\\+lastmod:[ \t]*"
+       time-stamp-end "$"
+       time-stamp-format "[%04Y-%02m-%02d %:A]"
+       org-clock-persist t
+       org-clock-in-resume t
+       org-clock-out-when-done t
+       org-clock-report-include-clocking-task t
+       org-html-validation-link nil
+       org-log-done 'time
+       org-log-repeat 'time
+       org-archive-location "~/org/archive.org::"
+       org-agenda-files '("~/org/")
+       )
+      :config
+      (require 'org-clock)
+      (setq org-ellipsis " ▾")
+    (setq org-agenda-start-with-log-mode t)
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
+    (require 'org-habit)
+    (add-to-list 'org-modules 'org-habit)
+    (setq org-habit-graph-column 60)
+    ;; Save Org buffers after refiling!
+    (advice-add 'org-refile :after 'org-save-all-org-buffers)
 
-  (use-package org
-    :ensure t
-    :init
-    (setq-default
-     org-startup-indented t
-     org-pretty-entities t
-     org-use-sub-superscripts "{}"
-     org-hide-emphasis-markers t
-     org-startup-with-inline-images t
-     org-image-actual-width '(300)
-     )
-    (setq
-     time-stamp-active t
-     time-stamp-start "#\\+lastmod:[ \t]*"
-     time-stamp-end "$"
-     time-stamp-format "[%04Y-%02m-%02d %:A]"
-     org-clock-persist t
-     org-clock-in-resume t
-     org-clock-out-when-done t
-     org-clock-report-include-clocking-task t
-     org-html-validation-link nil
-     org-log-done 'time
-     org-log-repeat 'time
-     org-archive-location "~/org/archive.org::"
-     org-agenda-files '("~/org/")
-     )
 
-    :config
-    (require 'org-clock)
+      ;; Agenda styling
+      (setq
+       org-agenda-tags-column 0
+       org-agenda-block-separator ?─
+       org-agenda-time-grid
+       '((daily today require-timed)
+         (800 1000 1200 1400 1600 1800 2000)
+         " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+       org-agenda-current-time-string ""
+       org-agenda-hide-tags-regexp ".*"
+       )
 
-    ;; Agenda styling
-    (setq
-     org-agenda-tags-column 0
-     org-agenda-block-separator ?─
-     org-agenda-time-grid
-     '((daily today require-timed)
-       (800 1000 1200 1400 1600 1800 2000)
-       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-     org-agenda-current-time-string ""
-     org-agenda-hide-tags-regexp ".*"
-     )
+      (add-hook 'org-agenda-mode-hook (lambda () (olivetti-mode)))
 
-    (add-hook 'org-agenda-mode-hook (lambda () (olivetti-mode)))
+      (setq org-agenda-custom-commands
+            '(("c" "Classes this Week"
+               ((agenda "" ((org-agenda-span '7)              ;; Show 7-day agenda
+                            (org-agenda-start-day "+0")       ;; Start from today
+                            (org-agenda-overriding-header "Classes this Week")
+                            (org-agenda-skip-function         ;; Skip entries without certain tags
+                             '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+              ("C" "Classes this Fortnight"
+               ((agenda "" ((org-agenda-span '14)              ;; Show 14-day agenda
+                            (org-agenda-start-day "+0")       ;; Start from today
+                            (org-agenda-overriding-header "Classes in the Next Two Weeks")
+                            (org-agenda-skip-function         ;; Skip entries without certain tags
+                             '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
 
-    (setq org-agenda-custom-commands
-          '(("c" "Classes this Week"
-             ((agenda "" ((org-agenda-span '7)              ;; Show 7-day agenda
-                          (org-agenda-start-day "+0")       ;; Start from today
-                          (org-agenda-overriding-header "Classes this Week")
-                          (org-agenda-skip-function         ;; Skip entries without certain tags
-                           '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
-            ("C" "Classes this Fortnight"
-             ((agenda "" ((org-agenda-span '14)              ;; Show 14-day agenda
-                          (org-agenda-start-day "+0")       ;; Start from today
-                          (org-agenda-overriding-header "Classes in the Next Two Weeks")
-                          (org-agenda-skip-function         ;; Skip entries without certain tags
-                           '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
-
-            ("d" agenda "Today's Deadlines"
-             (
-              (org-agenda-span 'day)
-              (org-agenda-skip-function '(org-agenda-skip-deadline-if-not-today))
-              (org-agenda-entry-types '(:deadline))
-              (org-agenda-overriding-header "Today's Deadlines ")
+              ("d" agenda "Today's Deadlines"
+               (
+                (org-agenda-span 'day)
+                (org-agenda-skip-function '(org-agenda-skip-deadline-if-not-today))
+                (org-agenda-entry-types '(:deadline))
+                (org-agenda-overriding-header "Today's Deadlines ")
+                ))
+    	  ("t" "Today's tasks"
+               ((agenda "" (
+    			(org-agenda-span 'day)
+                            (org-deadline-warning-days 0)
+                            (org-scheduled-past-days 0)
+    			(org-agenda-overriding-header "Today's Tasks")
+    			))))
               ))
-  	  ("t" "Today's tasks"
-             ((agenda "" (
-  			(org-agenda-span 'day)
-                          (org-deadline-warning-days 0)
-                          (org-scheduled-past-days 0)
-  			(org-agenda-overriding-header "Today's Tasks")
-  			))))
-            ))
 
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((python . t)))
-    :bind
-    (("C-c c" . org-capture)
-     ("C-c l" . org-store-link)
-     ("C-c a" . org-agenda)
-     ("C-c ," . org-timestamp-inactive)
-     )
-    :custom
-    (org-todo-keywords
-     '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
-    (org-export-with-drawers nil)
-    (org-export-with-todo-keywords nil)
-    (org-export-with-broken-links t)
-    (org-export-with-toc nil)
-    (org-export-with-smart-quotes t)
-    (org-export-date-timestamp-format "%d %B %Y")
-    (org-list-allow-alphabetical t)
-    (org-capture-bookmark nil)
-    (org-M-RET-may-split-line '((default . nil)))
-    (org-capture-templates
-     '(("f" "Fleeting note" item
-        (file+headline org-default-notes-file "Notes")
-        "- %?")
-       ("t" "New task" entry
-        (file+headline org-default-notes-file "Tasks")
-        "* TODO %i%?")
-       ("a" "Agenda notes" entry
-        (file+datetree "~/org/notes.org")
-        "* %U Agenda notes for %^{Agenda item} \n%?"
-        :clock-in t :clock-resume t :clock-out t)
-       )))
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       '((python . t)))
+      :bind
+      (("C-c c" . org-capture)
+       ("C-c l" . org-store-link)
+       ("C-c a" . org-agenda)
+       ("C-c ," . org-timestamp-inactive)
+       )
+      :custom
+      (org-todo-keywords
+       '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
+      (org-export-with-drawers nil)
+      (org-export-with-todo-keywords nil)
+      (org-export-with-broken-links t)
+      (org-export-with-toc nil)
+      (org-export-with-smart-quotes t)
+      (org-export-date-timestamp-format "%d %B %Y")
+      (org-list-allow-alphabetical t)
+      (org-capture-bookmark nil)
+      (org-M-RET-may-split-line '((default . nil)))
+      (org-capture-templates
+       '(("f" "Fleeting note" item
+          (file+headline org-default-notes-file "Notes")
+          "- %?")
+         ("t" "New task" entry
+          (file+headline org-default-notes-file "Tasks")
+          "* TODO %i%?")
+         ("a" "Agenda notes" entry
+          (file+datetree "~/org/notes.org")
+          "* %U Agenda notes for %^{Agenda item} \n%?"
+          :clock-in t :clock-resume t :clock-out t)
+         ))
+      (efs/org-font-setup)
+      )
 #+END_SRC
-
-
 ** Org Extensions
 *** Org Super Agenda
 #+BEGIN_SRC emacs-lisp
@@ -430,7 +455,18 @@
     (add-to-list 'org-re-reveal-plugin-config '(chalkboard "RevealChalkboard" "plugin/chalkboard/plugin.js"))
     )
 #+END_SRC
-
+** Functions for Org Mode
+#+BEGIN_SRC emacs-lisp
+  (defun efs/org-mode-setup ()
+    (org-indent-mode)
+    (variable-pitch-mode 1)
+    (visual-line-mode 1))
+#+END_SRC
+* Notmuch Configuration
+#+BEGIN_SRC emacs-lisp
+  (use-package notmuch
+    )
+#+END_SRC
 * Miscellaneous Configuration
 ** Man Mode
 #+BEGIN_SRC emacs-lisp
@@ -464,6 +500,7 @@
 
 * To make it pretty
 #+BEGIN_SRC emacs-lisp
+  (add-to-list 'default-frame-alist '(alpha-background . 80))
   (defvar efs/default-font-size 180)
   (defvar efs/default-variable-font-size 180)
     (defun efs/org-font-setup ()
@@ -503,7 +540,6 @@
     ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
     (set-face-attribute 'variable-pitch nil :font "NotoSansM Nerd Font" :height efs/default-font-size)
 
-
     (use-package nerd-icons)
 
     (use-package olivetti
@@ -527,8 +563,7 @@
 ** Themes
 (use-package modus-themes
 :config
-(load-theme 'modus-operandi-tinted :no-confirm)
-)
+(load-theme 'modus-operandi-tinted :no-confirm))
 (use-package catppuccin-theme
 :config
 (setq catppuccin-flavor 'mocha)
@@ -748,10 +783,6 @@ run ~M-x all-the-icons-install-fonts~ when not behind GFW because all-the-icons 
 ;; If there is more than one, they won't work right.
 '(package-selected-packages
 '(ligature dashboard minions doom-modeline doom-themes solaire-mode highlight-numbers volatile-highlights highlight-indent-guides olivetti fancy-battery which-key magit git-timemachine git-gutter-fringe git-gutter nerd-icons yasnippet company corfu evil-numbers evil-surround evil-commentary evil-collection evil org-re-reveal)))
-** Fonts
-#+BEGIN_SRC emacs-lisp
-
-#+END_SRC
 * Functions
 #+BEGIN_SRC emacs-lisp
   (defun aorst/font-installed-p (font-name)
@@ -1055,53 +1086,56 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
 
 ** Git Configuration
 #+BEGIN_SRC emacs-lisp
-  (use-package magit
-    :config
-    (setq magit-push-always-verify nil)
-    (setq git-commit-summary-max-length 50)
-    :bind ("C-x g" . magit-status)
-    :delight)
+    (use-package magit
+      :config
+      (setq
+       magit-push-always-verify nil
+       git-commit-summary-max-length 50
+       )
+      :bind ("C-x g" . magit-status)
+      :custom
+      (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
-  (use-package git-gutter
-    :delight
-    :when window-system
-    :defer t
-    :bind (("C-x P" . git-gutter:popup-hunk)
-           ("M-P" . git-gutter:previous-hunk)
-           ("M-N" . git-gutter:next-hunk)
-           ("C-c G" . git-gutter:popup-hunk))
-    :hook ((prog-mode org-mode) . git-gutter-mode )
-    :config
-    (setq git-gutter:update-interval 2)
-    ;; (setq git-gutter:modified-sign "†") ; ✘
-    ;; (setq git-gutter:added-sign "†")
-    ;; (setq git-gutter:deleted-sign "†")
-    ;; (set-face-foreground 'git-gutter:added "Green")
-    ;; (set-face-foreground 'git-gutter:modified "Gold")
-    ;; (set-face-foreground 'git-gutter:deleted "Red")
-    )
+    (use-package git-gutter
+      :delight
+      :when window-system
+      :defer t
+      :bind (("C-x P" . git-gutter:popup-hunk)
+             ("M-P" . git-gutter:previous-hunk)
+             ("M-N" . git-gutter:next-hunk)
+             ("C-c G" . git-gutter:popup-hunk))
+      :hook ((prog-mode org-mode) . git-gutter-mode )
+      :config
+      (setq git-gutter:update-interval 2)
+      ;; (setq git-gutter:modified-sign "†") ; ✘
+      ;; (setq git-gutter:added-sign "†")
+      ;; (setq git-gutter:deleted-sign "†")
+      ;; (set-face-foreground 'git-gutter:added "Green")
+      ;; (set-face-foreground 'git-gutter:modified "Gold")
+      ;; (set-face-foreground 'git-gutter:deleted "Red")
+      )
 
-  (use-package git-gutter-fringe
-    :delight
-    :after git-gutter
-    :when window-system
-    :defer t
-    :init
-    (require 'git-gutter-fringe)
-    (when (fboundp 'define-fringe-bitmap)
-      (define-fringe-bitmap 'git-gutter-fr:added
-        [224 224 224 224 224 224 224 224 224 224 224 224 224
-             224 224 224 224 224 224 224 224 224 224 224 224]
-        nil nil 'center)
-      (define-fringe-bitmap 'git-gutter-fr:modified
-        [224 224 224 224 224 224 224 224 224 224 224 224 224
-             224 224 224 224 224 224 224 224 224 224 224 224]
-        nil nil 'center)
-      (define-fringe-bitmap 'git-gutter-fr:deleted
-        [0 0 0 0 0 0 0 0 0 0 0 0 0 128 192 224 240 248]
-        nil nil 'center)))
+    (use-package git-gutter-fringe
+      :delight
+      :after git-gutter
+      :when window-system
+      :defer t
+      :init
+      (require 'git-gutter-fringe)
+      (when (fboundp 'define-fringe-bitmap)
+        (define-fringe-bitmap 'git-gutter-fr:added
+          [224 224 224 224 224 224 224 224 224 224 224 224 224
+               224 224 224 224 224 224 224 224 224 224 224 224]
+          nil nil 'center)
+        (define-fringe-bitmap 'git-gutter-fr:modified
+          [224 224 224 224 224 224 224 224 224 224 224 224 224
+               224 224 224 224 224 224 224 224 224 224 224 224]
+          nil nil 'center)
+        (define-fringe-bitmap 'git-gutter-fr:deleted
+          [0 0 0 0 0 0 0 0 0 0 0 0 0 128 192 224 240 248]
+          nil nil 'center)))
 
-  (use-package git-timemachine)
+    (use-package git-timemachine)
 #+END_SRC
 ** Helpful
 #+BEGIN_SRC emacs-lisp
@@ -1115,7 +1149,27 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
     ([remap describe-variable] . counsel-describe-variable)
     ([remap describe-key] . helpful-key))
 #+END_SRC
+** LSP-Mode
+#+BEGIN_SRC emacs-lisp
+      (defun efs/lsp-mode-setup ()
+        (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+        (lsp-headerline-breadcrumb-mode))
 
+      (use-package lsp-mode
+        :commands (lsp lsp-deferred)
+        :hook (lsp-mode . efs/lsp-mode-setup)
+        :init
+        (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
+        :config
+        (lsp-enable-which-key-integration t))
+    (use-package lsp-ui
+      :hook (lsp-mode . lsp-ui-mode)
+      :custom
+      (lsp-ui-doc-position 'bottom))
+  (use-package lsp-treemacs
+    :after lsp)
+(use-package lsp-ivy)
+#+END_SRC
 ** Projectile
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
@@ -1136,13 +1190,14 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
 ** Which Key
 #+BEGIN_SRC emacs-lisp
   (use-package which-key
-    :init (which-key-mode)
-
-    (which-key-setup-minibuffer)
+    :defer 0
+    :diminish which-key-mode
     :config
-    (setq which-key-sort-order 'which-key-key-order-alpha
-          which-key-idle 0.5
-          which-key-idle-delay 1))
+    (which-key-mode)
+    (setq
+     which-key-idle-delay 1
+     )
+   )
 #+END_SRC
 
 * Nice to Have
@@ -1194,8 +1249,8 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
            (css-mode . rainbow-mode)))
 
   (use-package rainbow-delimiters
-    :config (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
-    :delight)
+    :hook (prog-mode . rainbow-delimiters-mode)
+    )
 
 #+END_SRC
 
@@ -1214,6 +1269,13 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
   (add-to-list 'load-path "~/.config/emacs/writegood.el")
   (load-file "~/.config/emacs/writegood.el")
   (require 'writegood-mode)
+#+END_SRC
+
+* Nix mode
+#+BEGIN_SRC emacs-lisp
+  (use-package nix-mode
+    :ensure t
+    :mode "\\.nix\\'")
 #+END_SRC
 
 * Setup                                                     :noexport:

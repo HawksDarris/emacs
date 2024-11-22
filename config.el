@@ -1,45 +1,61 @@
-(global-set-key (kbd "C-x C-o")
-                (lambda ()
-                  (interactive)
-                  (flush-lines "^$")
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+
+  ;; Initialize use-package on non-Linux platforms
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+  (global-set-key (kbd "C-x C-o")
+                  (lambda ()
+                    (interactive)
+                    (flush-lines "^$")
+                    )
                   )
-                )
 
 (use-package emacs
-  :preface
-  (defun my-reload-emacs ()
-    "Reload the Emacs configuration"
-    (interactive)
-    (load-file "~/.emacs.d/init.el"))
-  (defun revert-buffer-no-confirm ()
-    "Revert buffer without confirmation."
-    (interactive) (revert-buffer t t))
-  :config
-  (setq visible-bell t)
-  (if init-file-debug
-      (setq warning-minimum-level :debug)
-    (setq warning-minimum-level :emergency))
-  ;; Space around the windows
-  ;; (fringe-mode '(0 . 0))
-  (set-fringe-style '(8 . 8))
-  ;; Terminal transparency
-  (face-spec-set 'default
-                 '((((type tty)) :background "unspecified-bg")))
-  ;; Remember line number
-  (if (fboundp #'save-place-mode)
-      (save-place-mode +1)
-    (setq-default save-place t))
-  ;; Mimetypes
-  (setq mailcap-user-mime-data
-        '((type . "application/pdf")
-          (viewer . pdf-view-mode)))
-  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
-  :bind
-  (("C-c R" . my-reload-emacs))
-  ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts
-  ("C-c C-r" . revert-buffer-no-confirm)
-  :hook (before-save . delete-trailing-whitespace)
-  )
+    :preface
+    (defun my-reload-emacs ()
+      "Reload the Emacs configuration"
+      (interactive)
+      (load-file "~/.emacs.d/init.el"))
+    (defun revert-buffer-no-confirm ()
+      "Revert buffer without confirmation."
+      (interactive) (revert-buffer t t))
+    :config
+    (setq visible-bell t)
+    (if init-file-debug
+        (setq warning-minimum-level :debug)
+      (setq warning-minimum-level :emergency))
+    ;; Space around the windows
+    ;; (fringe-mode '(0 . 0))
+    (set-fringe-style '(8 . 8))
+    ;; Terminal transparency
+    (face-spec-set 'default
+                   '((((type tty)) :background "unspecified-bg")))
+    ;; Remember line number
+    (if (fboundp #'save-place-mode)
+        (save-place-mode +1)
+      (setq-default save-place t))
+    ;; Mimetypes
+    (setq mailcap-user-mime-data
+          '((type . "application/pdf")
+            (viewer . pdf-view-mode)))
+    ;; (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
+(setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+    :bind
+    (("C-c R" . my-reload-emacs))
+    ("<escape>" . keyboard-escape-quit) ; Make ESC close prompts
+    ("C-c C-r" . revert-buffer-no-confirm)
+    :hook (before-save . delete-trailing-whitespace)
+    )
 
 (use-package evil
   :init
@@ -68,9 +84,11 @@
 (evil-define-key 'normal 'global (kbd "<leader>wm") 'writegood-mode)
 (evil-define-key 'normal 'global (kbd "<leader>a") 'evil-numbers/inc-at-pt)
 (evil-define-key 'normal 'global (kbd "<leader>x") 'evil-numbers/dec-at-pt)
+(evil-define-key 'normal 'global (kbd "<leader>,") 'org-timestamp-inactive)
 
 ;; buffers
 (evil-define-key 'normal 'global (kbd "<leader>bb") 'switch-to-buffer)
+(evil-define-key 'normal 'global (kbd "<leader>bd") 'dashboard-refresh-buffer)
 (evil-define-key 'normal 'global (kbd "<leader>bk") 'kill-buffer)
 (evil-define-key 'normal 'global (kbd "<leader>bx") 'scratch-buffer)
 (evil-define-key 'normal 'global (kbd "<leader>bs") 'save-buffer)
@@ -132,9 +150,18 @@
    org-archive-location "~/org/archive.org::"
    org-agenda-files '("~/org/")
    )
-
   :config
   (require 'org-clock)
+  (setq org-ellipsis " ▾")
+(setq org-agenda-start-with-log-mode t)
+(setq org-log-done 'time)
+(setq org-log-into-drawer t)
+(require 'org-habit)
+(add-to-list 'org-modules 'org-habit)
+(setq org-habit-graph-column 60)
+;; Save Org buffers after refiling!
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+
 
   ;; Agenda styling
   (setq
@@ -212,7 +239,9 @@
       (file+datetree "~/org/notes.org")
       "* %U Agenda notes for %^{Agenda item} \n%?"
       :clock-in t :clock-resume t :clock-out t)
-     )))
+     ))
+  (efs/org-font-setup)
+  )
 
 (use-package org-super-agenda
   :config
@@ -279,7 +308,7 @@
   (evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
   (evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
   ;; Dailies
-  (evil-define-key 'normal 'global (kbd "<leader>rj" ) 'org-roam-dailies-capture-today)
+  (evil-define-key 'normal 'global (kbd "<leader>dj" ) 'org-roam-dailies-capture-today)
   )
 
 (use-package org-re-reveal
@@ -319,6 +348,14 @@
   (add-to-list 'org-re-reveal-plugin-config '(chalkboard "RevealChalkboard" "plugin/chalkboard/plugin.js"))
   )
 
+(defun efs/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1))
+
+(use-package notmuch
+  )
+
 (use-package man
   :bind (
 	 :map Man-mode-map
@@ -340,6 +377,7 @@
         `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
   )
 
+(add-to-list 'default-frame-alist '(alpha-background . 80))
 (defvar efs/default-font-size 180)
 (defvar efs/default-variable-font-size 180)
   (defun efs/org-font-setup ()
@@ -379,7 +417,6 @@
   ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
   (set-face-attribute 'variable-pitch nil :font "NotoSansM Nerd Font" :height efs/default-font-size)
 
-
   (use-package nerd-icons)
 
   (use-package olivetti
@@ -406,24 +443,12 @@
 (use-package doom-themes
   :init (load-theme 'doom-dracula t))
 
-(defun cycle-themes ()
-  (interactive)
-  (disable-theme 'catppuccin)
-  (if (eq catppuccin-flavor 'latte)
-      (setq catppuccin-flavor 'mocha)
-    (if (eq catppuccin-flavor 'mocha)
-        (setq catppuccin-flavor 'latte)
-      )
-    )
-  (load-theme 'catppuccin :no-confirm)
-  )
-
 (use-package dashboard
   :bind (:map dashboard-mode-map
               ;; ("j" . nil)
               ;; ("k" . nil)
-              ("n" . 'dashboard-next-line)
-              ("p" . 'dashboard-previous-line)
+              ;; ("n" . 'dashboard-next-line)
+              ;; ("p" . 'dashboard-previous-line)
               )
   :init
   (add-hook 'dashboard-mode-hook (lambda () (setq show-trailing-whitespace nil)))
@@ -436,6 +461,7 @@
   (dashboard-center-content t)
   (dashboard-set-file-icons t)
   (dashboard-set-heading-icons t)
+  (dashboard-display-icons-p t)
   (dashboard-image-banner-max-height 250)
   (dashboard-banner-logo-title "[Ποσειδον 🔱 εδιτορ]") ; [Π Ο Σ Ε Ι Δ Ο Ν 🔱 Ε Δ Ι Τ Ο Ρ]
   :config
@@ -454,10 +480,22 @@
                      (bookmarks      . 5)
                      (registers      . 5)))
   (setq dashboard-agenda-sort-strategy '(todo-state-up time-up))
-  (dashboard-refresh-buffer)
   )
+;; (add-hook 'after-make-frame-functions
+;;           (lambda (frame)
+;;             (when (display-graphic-p frame)
+;;               (with-selected-frame frame
+;;                 (dashboard-refresh-buffer)))))
+;; (add-hook 'after-make-frame-functions
+;;           (lambda (frame)
+;;             (with-selected-frame frame
+;;               (load-theme 'your-theme t))))
+(add-hook 'server-after-make-frame-hook
+          (lambda ()
+            (dashboard-refresh-buffer)))
 
-;; (use-package all-the-icons)
+(use-package all-the-icons
+  :ensure t)
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom
@@ -508,7 +546,7 @@
                                        "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
                                        ;;                                        "\\\\" "://"))
                                        )
-                          )
+			  )
   )
 
 (use-package org-modern
@@ -770,37 +808,56 @@
   (evil-define-key 'normal 'global (kbd "<leader>bl") 'counsel-switch-buffer)
   )
 
-(use-package helpful
-  :custom
-  (counsel-describe-function-function #'helpful-callable)
-  (counsel-describe-variable-function #'helpful-variable)
-  :bind
-  ([remap describe-function] . counsel-describe-function)
-  ([remap describe-command] . helpful-command)
-  ([remap describe-variable] . counsel-describe-variable)
-  ([remap describe-key] . helpful-key))
+(use-package flycheck
+  :hook (prog-mode . flycheck-mode)
+  :bind (("M-g M-j" . flycheck-next-error)
+         ("M-g M-k" . flycheck-previous-error)
+         ("M-g M-l" . flycheck-list-errors))
+  :config
+  (setq flycheck-indication-mode 'right-fringe
+        flycheck-check-syntax-automatically '(save mode-enabled))
+  (global-flycheck-mode)
+  ;; Small BitMap-Arrow
+  (when (fboundp 'define-fringe-bitmap)
+    (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
+      [16 48 112 240 112 48 16] nil nil 'center))
+  ;; Explanation-Mark !
+  ;; (when window-system
+  ;;   (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
+  ;;     [0 24 24 24 24 24 24 0 0 24 24 0 0 0 0 0 0]))
+  ;; BIG BitMap-Arrow
+  ;; (when (fboundp 'define-fringe-bitmap)
+  ;;   (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
+  ;;     [0 0 0 0 0 4 12 28 60 124 252 124 60 28 12 4 0 0 0 0]))
+  :custom-face
+  (flycheck-warning ((t (:underline (:color "#fabd2f" :style line :position line)))))
+  (flycheck-error ((t (:underline (:color "#fb4934" :style line :position line)))))
+  (flycheck-info ((t (:underline (:color "#83a598" :style line :position line)))))
+  :delight " ∰") ; "Ⓢ"
+(use-package flycheck-popup-tip
+  :config
+  (add-hook 'flycheck-mode-hook 'flycheck-popup-tip-mode))
 
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/Projects/Code")
-    (setq projectile-project-search-path '("~/Projects/Code")))
-  (setq projectile-switch-project-action #'projectile-dired))
+(use-package general
+  :config
+  (general-create-definer rune/leader-keys
+    :keymaps '(normal insert visual emacs)
+    :prefix "SPC"
+    :global-prefix "C-SPC")
 
-(use-package counsel-projectile
-  :config (counsel-projectile-mode))
+  (rune/leader-keys
+    "t"  '(:ignore t :which-key "toggles")
+    "tt" '(counsel-load-theme :which-key "choose theme")))
 
 (use-package magit
   :config
-  (setq magit-push-always-verify nil)
-  (setq git-commit-summary-max-length 50)
+  (setq
+   magit-push-always-verify nil
+   git-commit-summary-max-length 50
+   )
   :bind ("C-x g" . magit-status)
-  :delight)
+  :custom
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
 (use-package git-gutter
   :delight
@@ -843,60 +900,59 @@
 
 (use-package git-timemachine)
 
+(use-package helpful
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable)
+  :bind
+  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . counsel-describe-variable)
+  ([remap describe-key] . helpful-key))
+
+(defun efs/lsp-mode-setup ()
+        (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+        (lsp-headerline-breadcrumb-mode))
+
+      (use-package lsp-mode
+        :commands (lsp lsp-deferred)
+        :hook (lsp-mode . efs/lsp-mode-setup)
+        :init
+        (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
+        :config
+        (lsp-enable-which-key-integration t))
+    (use-package lsp-ui
+      :hook (lsp-mode . lsp-ui-mode)
+      :custom
+      (lsp-ui-doc-position 'bottom))
+  (use-package lsp-treemacs
+    :after lsp)
+(use-package lsp-ivy)
+
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  ;; NOTE: Set this to the folder where you keep your Git repos!
+  (when (file-directory-p "~/Projects/Code")
+    (setq projectile-project-search-path '("~/Projects/Code")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
+
 (use-package which-key
-  :init (which-key-mode)
-
-  (which-key-setup-minibuffer)
+  :defer 0
+  :diminish which-key-mode
   :config
-  (setq which-key-sort-order 'which-key-key-order-alpha
-        which-key-idle 0.5
-        which-key-idle-delay 1))
-
-(use-package flycheck
-  :hook (prog-mode . flycheck-mode)
-  :bind (("M-g M-j" . flycheck-next-error)
-         ("M-g M-k" . flycheck-previous-error)
-         ("M-g M-l" . flycheck-list-errors))
-  :config
-  (setq flycheck-indication-mode 'right-fringe
-        flycheck-check-syntax-automatically '(save mode-enabled))
-  (global-flycheck-mode)
-  ;; Small BitMap-Arrow
-  (when (fboundp 'define-fringe-bitmap)
-    (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
-      [16 48 112 240 112 48 16] nil nil 'center))
-  ;; Explanation-Mark !
-  ;; (when window-system
-  ;;   (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
-  ;;     [0 24 24 24 24 24 24 0 0 24 24 0 0 0 0 0 0]))
-  ;; BIG BitMap-Arrow
-  ;; (when (fboundp 'define-fringe-bitmap)
-  ;;   (define-fringe-bitmap 'flycheck-fringe-bitmap-double-arrow
-  ;;     [0 0 0 0 0 4 12 28 60 124 252 124 60 28 12 4 0 0 0 0]))
-  :custom-face
-  (flycheck-warning ((t (:underline (:color "#fabd2f" :style line :position line)))))
-  (flycheck-error ((t (:underline (:color "#fb4934" :style line :position line)))))
-  (flycheck-info ((t (:underline (:color "#83a598" :style line :position line)))))
-  :delight " ∰") ; "Ⓢ"
-(use-package flycheck-popup-tip
-  :config
-  (add-hook 'flycheck-mode-hook 'flycheck-popup-tip-mode))
-
-(use-package general
-  :config
-  (general-create-definer rune/leader-keys
-    :keymaps '(normal insert visual emacs)
-    :prefix "SPC"
-    :global-prefix "C-SPC")
-
-  (rune/leader-keys
-    "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
-
-(use-package dirvish
-  :config
-  (dirvish-override-dired-mode)
-  )
+  (which-key-mode)
+  (setq
+   which-key-idle-delay 1
+   )
+ )
 
 (use-package fancy-battery
   :config
@@ -905,6 +961,11 @@
   (if window-system
       (fancy-battery-mode)
     (display-battery-mode)))
+
+(use-package dirvish
+  :config
+  (dirvish-override-dired-mode)
+  )
 
 (use-package highlight-indent-guides
   :custom
@@ -934,8 +995,8 @@
          (css-mode . rainbow-mode)))
 
 (use-package rainbow-delimiters
-  :config (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
-  :delight)
+  :hook (prog-mode . rainbow-delimiters-mode)
+  )
 
 (global-visual-line-mode t)
 (save-place-mode t)
@@ -947,3 +1008,7 @@
 (add-to-list 'load-path "~/.config/emacs/writegood.el")
 (load-file "~/.config/emacs/writegood.el")
 (require 'writegood-mode)
+
+(use-package nix-mode
+  :ensure t
+  :mode "\\.nix\\'")

@@ -544,43 +544,14 @@
     :init (load-theme 'doom-dracula t))
 #+END_SRC
 
-*** TODO Theme Switching
-(load-theme 'gruvbox-dark-hard :no-confirm)
-((disable-theme 'catppuccin) (load-theme 'modus-operandi-tinted :no-confirm))
-
-1. The variable that stores current themes
-2. Disable each of those themes (iteration?)
-3. A list of themes I want to use
-4. Choose next theme in the list
-5. Maybe a function to separate light and dark themes
-6. Maybe a time-of-day-based switch between light and dark themes (sounds a little extra, but why not lol)
-
-   (ILLT)BSAME: (I like light themes) but stop attacking my eyes
-
-(print custom-theme-load-path)
-*** To change themes
-#+BEGIN_SRC emacs-lisp
-  (defun cycle-themes ()
-    (interactive)
-    (disable-theme 'catppuccin)
-    (if (eq catppuccin-flavor 'latte)
-        (setq catppuccin-flavor 'mocha)
-      (if (eq catppuccin-flavor 'mocha)
-          (setq catppuccin-flavor 'latte)
-        )
-      )
-    (load-theme 'catppuccin :no-confirm)
-    )
-#+END_SRC
-
 ** Dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
     :bind (:map dashboard-mode-map
                 ;; ("j" . nil)
                 ;; ("k" . nil)
-                ("n" . 'dashboard-next-line)
-                ("p" . 'dashboard-previous-line)
+                ;; ("n" . 'dashboard-next-line)
+                ;; ("p" . 'dashboard-previous-line)
                 )
     :init
     (add-hook 'dashboard-mode-hook (lambda () (setq show-trailing-whitespace nil)))
@@ -593,6 +564,7 @@
     (dashboard-center-content t)
     (dashboard-set-file-icons t)
     (dashboard-set-heading-icons t)
+    (dashboard-display-icons-p t)
     (dashboard-image-banner-max-height 250)
     (dashboard-banner-logo-title "[Ποσειδον 🔱 εδιτορ]") ; [Π Ο Σ Ε Ι Δ Ο Ν 🔱 Ε Δ Ι Τ Ο Ρ]
     :config
@@ -611,31 +583,45 @@
                        (bookmarks      . 5)
                        (registers      . 5)))
     (setq dashboard-agenda-sort-strategy '(todo-state-up time-up))
-    (dashboard-refresh-buffer)
     )
+  ;; (add-hook 'after-make-frame-functions
+  ;;           (lambda (frame)
+  ;;             (when (display-graphic-p frame)
+  ;;               (with-selected-frame frame
+  ;;                 (dashboard-refresh-buffer)))))
+  ;; (add-hook 'after-make-frame-functions
+  ;;           (lambda (frame)
+  ;;             (with-selected-frame frame
+  ;;               (load-theme 'your-theme t))))
+  (add-hook 'server-after-make-frame-hook
+            (lambda ()
+              (dashboard-refresh-buffer)))
 #+END_SRC
+*** TODO Get banners for emacs dashboard
+(dashboard-startup-banner (concat user-emacs-directory "path/to/pic.png"))
 
 ** WAITING Modeline
-Uncomment (use-package all-the-icons) and run ~M-x all-the-icons-install-fonts~ when not behind GFW because all-the-icons goes to raw.githubusercontent, so it's blocked.
+run ~M-x all-the-icons-install-fonts~ when not behind GFW because all-the-icons goes to raw.githubusercontent, so it's blocked.
 #+BEGIN_SRC emacs-lisp
-  ;; (use-package all-the-icons)
-  (use-package doom-modeline
-    :init (doom-modeline-mode 1)
-    :custom
-    ;; Don't compact font caches during GC. Windows Laggy Issue
-    (inhibit-compacting-font-caches t)
-    (doom-modeline-height 15)
-    (doom-modeline-major-mode-icon t)
-    (doom-modeline-major-mode-color-icon t)
-    (doom-modeline-icon (display-graphic-p))
-    (doom-modeline-checker-simple-format t)
-    (doom-line-numbers-style 'relative)
-    (doom-modeline-buffer-file-name-style 'relative-to-project)
-    (doom-modeline-buffer-modification-icon t)
-    (doom-modeline-buffer-encoding nil)
-    (doom-modeline-buffer-state-icon t)
-    (doom-modeline-flycheck-icon t)
-    (doom-modeline-height 35))
+    (use-package all-the-icons
+      :ensure t)
+    (use-package doom-modeline
+      :init (doom-modeline-mode 1)
+      :custom
+      ;; Don't compact font caches during GC. Windows Laggy Issue
+      (inhibit-compacting-font-caches t)
+      (doom-modeline-height 15)
+      (doom-modeline-major-mode-icon t)
+      (doom-modeline-major-mode-color-icon t)
+      (doom-modeline-icon (display-graphic-p))
+      (doom-modeline-checker-simple-format t)
+      (doom-line-numbers-style 'relative)
+      (doom-modeline-buffer-file-name-style 'relative-to-project)
+      (doom-modeline-buffer-modification-icon t)
+      (doom-modeline-buffer-encoding nil)
+      (doom-modeline-buffer-state-icon t)
+      (doom-modeline-flycheck-icon t)
+      (doom-modeline-height 35))
 #+END_SRC
 
 ** Minor Mode Menu
@@ -647,8 +633,6 @@ Uncomment (use-package all-the-icons) and run ~M-x all-the-icons-install-fonts~ 
     (minions-mode 1)
     (setq minions-mode-line-lighter "[+]"))
 #+END_SRC
-** TODO Get banners for emacs dashboard
-(dashboard-startup-banner (concat user-emacs-directory "path/to/pic.png"))
 ** Ligatures
 #+BEGIN_SRC emacs-lisp
   (use-package ligature
@@ -674,13 +658,12 @@ Uncomment (use-package all-the-icons) and run ~M-x all-the-icons-install-fonts~ 
                                          "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
                                          "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
                                          "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
-                                         ;;                                        "\\\\" "://"))
+                                         "\\\\" "://"))
                                          )
-                            )
-    )
 #+END_SRC
 
-*** Ligatures for Jetbrain Font
+
+*** COMMENT Ligatures for Jetbrain Font                          :noexport:
 #+BEGIN_SRC emacs-lisp
 ;; (when
 ;;     (aorst/font-installed-p "JetBrainsMono")

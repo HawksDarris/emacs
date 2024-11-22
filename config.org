@@ -385,7 +385,7 @@
         (evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
         (evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
         ;; Dailies
-        (evil-define-key 'normal 'global (kbd "<leader>rj" ) 'org-roam-dailies-capture-today)
+        (evil-define-key 'normal 'global (kbd "<leader>dj" ) 'org-roam-dailies-capture-today)
         )
     #+END_SRC
 

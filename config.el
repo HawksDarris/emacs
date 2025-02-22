@@ -48,7 +48,6 @@
     (setq mailcap-user-mime-data
           '((type . "application/pdf")
             (viewer . pdf-view-mode)))
-    ;; (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
 (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
     :bind
     (("C-c R" . my-reload-emacs))
@@ -149,6 +148,8 @@
    org-log-repeat 'time
    org-archive-location "~/org/archive.org::"
    org-agenda-files '("~/org/")
+   org-default-notes-file '("~/org/notes.org")
+   org-todo-file '("~/org/todo.org")
    )
   :config
   (require 'org-clock)
@@ -233,13 +234,14 @@
       (file+headline org-default-notes-file "Notes")
       "- %?")
      ("t" "New task" entry
-      (file+headline org-default-notes-file "Tasks")
+      (file+headline "~/org/todo.org" "Fleeting Tasks")
       "* TODO %i%?")
      ("a" "Agenda notes" entry
       (file+datetree "~/org/notes.org")
       "* %U Agenda notes for %^{Agenda item} \n%?"
       :clock-in t :clock-resume t :clock-out t)
-     ))
+    ("j" "Journal" entry (file+datetree "~/org/journal.org")
+       "* %?\nEntered on %U\n  %i\n  %a")))
   (efs/org-font-setup)
   )
 
@@ -285,30 +287,30 @@
   :custom
   (org-roam-directory "~/org/roam")
   :bind (
-	   ("C-c n l" . org-roam-buffer-toggle)
+       ("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
          ("C-c n g" . org-roam-graph)
          ("C-c n i" . org-roam-node-insert)
          ("C-c n c" . org-roam-capture)
          ;; Dailies
          ("C-c n j" . org-roam-dailies-capture-today)
-	     )
+       )
   :config
+  (rune/leader-keys ;; requires general.el
+    "rb" 'org-roam-buffer-toggle
+    "rf" 'org-roam-node-find
+    "rg" 'org-roam-graph
+    "ri" 'org-roam-node-insert
+    "rc" 'org-roam-capture
+    "rd" 'org-roam-dailies-capture-today
+    )
   (setq org-roam-graph-executable
-	(executable-find "neato"))
+      (executable-find "neato"))
   (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   (setq org-roam-completion-system 'ido)
   (org-roam-db-autosync-mode)
   ;; If using org-roam-protocol
   (require 'org-roam-protocol)
-  (evil-define-key 'normal 'global (kbd "<leader>rb" ) 'org-roam-buffer-toggle)
-  (evil-define-key 'normal 'global (kbd "<leader>rf" ) 'org-roam-node-find)
-  (evil-define-key 'normal 'global (kbd "<leader>rg" ) 'org-roam-graph)
-  (evil-define-key 'normal 'global (kbd "<leader>ri" ) 'org-roam-node-insert)
-  (evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
-  (evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
-  ;; Dailies
-  (evil-define-key 'normal 'global (kbd "<leader>dj" ) 'org-roam-dailies-capture-today)
   )
 
 (use-package org-re-reveal
@@ -353,8 +355,10 @@
   (variable-pitch-mode 1)
   (visual-line-mode 1))
 
-(use-package notmuch
-  )
+(autoload 'notmuch "notmuch" "notmuch mail" t)
+  (evil-define-key 'normal 'global (kbd "<leader>e") 'notmuch)
+(evil-define-key 'normal notmuch-hello-mode-map "?" 'notmuch-help)
+(evil-define-key 'normal notmuch-hello-mode-map "G" 'notmuch-poll)
 
 (use-package man
   :bind (
@@ -544,10 +548,8 @@
                                        "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
                                        "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
                                        "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
-                                       ;;                                        "\\\\" "://"))
+                                       "\\\\" "://"))
                                        )
-			  )
-  )
 
 (use-package org-modern
   :config
@@ -583,71 +585,6 @@
   (setq org-ellipsis "…")
   (set-face-attribute 'org-ellipsis nil :inherit 'default :box nil)
   )
-
-(defun aorst/font-installed-p (font-name)
-  "Check if font with FONT-NAME is available."
-  (if (find-font (font-spec :name font-name))
-      t
-    nil))
-
-(defun company-yasnippet-or-completion ()
-  (interactive)
-  (or (do-yas-expand)
-      (company-complete-common)))
-
-(defun check-expansion ()
-  (save-excursion
-    (if (looking-at "\\_>") t
-      (backward-char 1)
-      (if (looking-at "\\.") t
-        (backward-char 1)
-        (if (looking-at "::") t nil)))))
-
-(defun do-yas-expand ()
-  (let ((yas/fallback-behavior 'return-nil))
-    (yas/expand)))
-
-(defun tab-indent-or-complete ()
-  (interactive)
-  (if (minibufferp)
-      (minibuffer-complete)
-    (if (or (not yas/minor-mode)
-            (null (do-yas-expand)))
-        (if (check-expansion)
-            (company-complete-common)
-          (indent-for-tab-command)))))
-
-(defun scramble-words-on-line ()
-  "Scramble the words on the current line."
-  (interactive)
-  (let* ((line-start (line-beginning-position))
-         (line-end (line-end-position))
-         (line (buffer-substring-no-properties line-start line-end))
-         (words (split-string line))
-         (scrambled-words (shuffle-list words)))
-    (delete-region line-start line-end)
-    (insert (mapconcat 'identity scrambled-words " "))))
-
-(defun shuffle-list (list)
-  "Shuffle LIST randomly."
-  (let ((len (length list))
-        (result (copy-sequence list)))
-    (dotimes (i len result)
-      (let ((j (random (+ 1 i))))
-        (cl-rotatef (nth i result) (nth j result))))))
-
-(defun kill-other-buffers ()
-  "Kill all buffers except the current one."
-  (interactive)
-  (let ((current-buffer (current-buffer)))
-    (dolist (buffer (buffer-list))
-      (unless (eq buffer current-buffer)
-        (with-current-buffer buffer
-          (when (and (buffer-file-name) (buffer-modified-p))
-            (if (y-or-n-p (format "Buffer %s is modified; save it? " (buffer-name)))
-                (save-buffer))))
-        (kill-buffer buffer))))
-  (message "Killed all other buffers"))
 
 (defun isamert/toggle-side-bullet-org-buffer ()
   "Toggle `bullet.org` in a side buffer for quick note taking.  The buffer is opened in side window so it can't be accidentaly removed."
@@ -847,7 +784,8 @@
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    "tt" '(counsel-load-theme :which-key "choose theme")
+    ))
 
 (use-package magit
   :config
@@ -1010,5 +948,24 @@
 (require 'writegood-mode)
 
 (use-package nix-mode
-  :ensure t
-  :mode "\\.nix\\'")
+    :ensure t
+    :mode "\\.nix\\'"
+    :hook   (nix-mode . lsp-deferred) ;; So that envrc mode will work
+    )
+(use-package nix-mode
+  :after lsp-mode
+  :custom
+  (lsp-disabled-clients '((nix-mode . nix-nil))) ;; Disable nil so that nixd will be used as lsp-server
+  :config
+  (setq lsp-nix-nixd-server-path "nixd"))
+
+(use-package rust-mode
+      :ensure t)
+  (use-package ob-rust
+    :ensure t
+    :after org
+    :config
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((rust . t)))
+)

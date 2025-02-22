@@ -57,6 +57,7 @@
 - [[#native-modes][Native Modes]]
 - [[#writegood-mode][Writegood Mode]]
 - [[#nix-mode][Nix mode]]
+- [[#rust-mode][Rust mode]]
 :END:
 
 * Initialization
@@ -213,124 +214,127 @@
 
 * Org Configuration
 #+BEGIN_SRC emacs-lisp
-    (use-package org
-      :ensure t
-      :init
-      (setq-default
-       org-startup-indented t
-       org-pretty-entities t
-       org-use-sub-superscripts "{}"
-       org-hide-emphasis-markers t
-       org-startup-with-inline-images t
-       org-image-actual-width '(300)
-       )
-      (setq
-       time-stamp-active t
-       time-stamp-start "#\\+lastmod:[ \t]*"
-       time-stamp-end "$"
-       time-stamp-format "[%04Y-%02m-%02d %:A]"
-       org-clock-persist t
-       org-clock-in-resume t
-       org-clock-out-when-done t
-       org-clock-report-include-clocking-task t
-       org-html-validation-link nil
-       org-log-done 'time
-       org-log-repeat 'time
-       org-archive-location "~/org/archive.org::"
-       org-agenda-files '("~/org/")
-       )
-      :config
-      (require 'org-clock)
-      (setq org-ellipsis " ▾")
-    (setq org-agenda-start-with-log-mode t)
-    (setq org-log-done 'time)
-    (setq org-log-into-drawer t)
-    (require 'org-habit)
-    (add-to-list 'org-modules 'org-habit)
-    (setq org-habit-graph-column 60)
-    ;; Save Org buffers after refiling!
-    (advice-add 'org-refile :after 'org-save-all-org-buffers)
+  (use-package org
+    :ensure t
+    :init
+    (setq-default
+     org-startup-indented t
+     org-pretty-entities t
+     org-use-sub-superscripts "{}"
+     org-hide-emphasis-markers t
+     org-startup-with-inline-images t
+     org-image-actual-width '(300)
+     )
+    (setq
+     time-stamp-active t
+     time-stamp-start "#\\+lastmod:[ \t]*"
+     time-stamp-end "$"
+     time-stamp-format "[%04Y-%02m-%02d %:A]"
+     org-clock-persist t
+     org-clock-in-resume t
+     org-clock-out-when-done t
+     org-clock-report-include-clocking-task t
+     org-html-validation-link nil
+     org-log-done 'time
+     org-log-repeat 'time
+     org-archive-location "~/org/archive.org::"
+     org-agenda-files '("~/org/")
+     org-default-notes-file '("~/org/notes.org")
+     org-todo-file '("~/org/todo.org")
+     )
+    :config
+    (require 'org-clock)
+    (setq org-ellipsis " ▾")
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 60)
+  ;; Save Org buffers after refiling!
+  (advice-add 'org-refile :after 'org-save-all-org-buffers)
 
 
-      ;; Agenda styling
-      (setq
-       org-agenda-tags-column 0
-       org-agenda-block-separator ?─
-       org-agenda-time-grid
-       '((daily today require-timed)
-         (800 1000 1200 1400 1600 1800 2000)
-         " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-       org-agenda-current-time-string ""
-       org-agenda-hide-tags-regexp ".*"
-       )
+    ;; Agenda styling
+    (setq
+     org-agenda-tags-column 0
+     org-agenda-block-separator ?─
+     org-agenda-time-grid
+     '((daily today require-timed)
+       (800 1000 1200 1400 1600 1800 2000)
+       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+     org-agenda-current-time-string ""
+     org-agenda-hide-tags-regexp ".*"
+     )
 
-      (add-hook 'org-agenda-mode-hook (lambda () (olivetti-mode)))
+    (add-hook 'org-agenda-mode-hook (lambda () (olivetti-mode)))
 
-      (setq org-agenda-custom-commands
-            '(("c" "Classes this Week"
-               ((agenda "" ((org-agenda-span '7)              ;; Show 7-day agenda
-                            (org-agenda-start-day "+0")       ;; Start from today
-                            (org-agenda-overriding-header "Classes this Week")
-                            (org-agenda-skip-function         ;; Skip entries without certain tags
-                             '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
-              ("C" "Classes this Fortnight"
-               ((agenda "" ((org-agenda-span '14)              ;; Show 14-day agenda
-                            (org-agenda-start-day "+0")       ;; Start from today
-                            (org-agenda-overriding-header "Classes in the Next Two Weeks")
-                            (org-agenda-skip-function         ;; Skip entries without certain tags
-                             '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+    (setq org-agenda-custom-commands
+          '(("c" "Classes this Week"
+             ((agenda "" ((org-agenda-span '7)              ;; Show 7-day agenda
+                          (org-agenda-start-day "+0")       ;; Start from today
+                          (org-agenda-overriding-header "Classes this Week")
+                          (org-agenda-skip-function         ;; Skip entries without certain tags
+                           '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
+            ("C" "Classes this Fortnight"
+             ((agenda "" ((org-agenda-span '14)              ;; Show 14-day agenda
+                          (org-agenda-start-day "+0")       ;; Start from today
+                          (org-agenda-overriding-header "Classes in the Next Two Weeks")
+                          (org-agenda-skip-function         ;; Skip entries without certain tags
+                           '(org-agenda-skip-entry-if 'notregexp ":evenweeks:\\|:oddweeks:\\|:hades:"))))))
 
-              ("d" agenda "Today's Deadlines"
-               (
-                (org-agenda-span 'day)
-                (org-agenda-skip-function '(org-agenda-skip-deadline-if-not-today))
-                (org-agenda-entry-types '(:deadline))
-                (org-agenda-overriding-header "Today's Deadlines ")
-                ))
-    	  ("t" "Today's tasks"
-               ((agenda "" (
-    			(org-agenda-span 'day)
-                            (org-deadline-warning-days 0)
-                            (org-scheduled-past-days 0)
-    			(org-agenda-overriding-header "Today's Tasks")
-    			))))
+            ("d" agenda "Today's Deadlines"
+             (
+              (org-agenda-span 'day)
+              (org-agenda-skip-function '(org-agenda-skip-deadline-if-not-today))
+              (org-agenda-entry-types '(:deadline))
+              (org-agenda-overriding-header "Today's Deadlines ")
               ))
+  	  ("t" "Today's tasks"
+             ((agenda "" (
+  			(org-agenda-span 'day)
+                          (org-deadline-warning-days 0)
+                          (org-scheduled-past-days 0)
+  			(org-agenda-overriding-header "Today's Tasks")
+  			))))
+            ))
 
-      (org-babel-do-load-languages
-       'org-babel-load-languages
-       '((python . t)))
-      :bind
-      (("C-c c" . org-capture)
-       ("C-c l" . org-store-link)
-       ("C-c a" . org-agenda)
-       ("C-c ," . org-timestamp-inactive)
-       )
-      :custom
-      (org-todo-keywords
-       '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
-      (org-export-with-drawers nil)
-      (org-export-with-todo-keywords nil)
-      (org-export-with-broken-links t)
-      (org-export-with-toc nil)
-      (org-export-with-smart-quotes t)
-      (org-export-date-timestamp-format "%d %B %Y")
-      (org-list-allow-alphabetical t)
-      (org-capture-bookmark nil)
-      (org-M-RET-may-split-line '((default . nil)))
-      (org-capture-templates
-       '(("f" "Fleeting note" item
-          (file+headline org-default-notes-file "Notes")
-          "- %?")
-         ("t" "New task" entry
-          (file+headline org-default-notes-file "Tasks")
-          "* TODO %i%?")
-         ("a" "Agenda notes" entry
-          (file+datetree "~/org/notes.org")
-          "* %U Agenda notes for %^{Agenda item} \n%?"
-          :clock-in t :clock-resume t :clock-out t)
-         ))
-      (efs/org-font-setup)
-      )
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((python . t)))
+    :bind
+    (("C-c c" . org-capture)
+     ("C-c l" . org-store-link)
+     ("C-c a" . org-agenda)
+     ("C-c ," . org-timestamp-inactive)
+     )
+    :custom
+    (org-todo-keywords
+     '((sequence "TODO(t)" "NEXT(n)" "WAITING(w)" "IN PROGRESS(p)" "|" "DONE(d)" "CANCELLED(c)")))
+    (org-export-with-drawers nil)
+    (org-export-with-todo-keywords nil)
+    (org-export-with-broken-links t)
+    (org-export-with-toc nil)
+    (org-export-with-smart-quotes t)
+    (org-export-date-timestamp-format "%d %B %Y")
+    (org-list-allow-alphabetical t)
+    (org-capture-bookmark nil)
+    (org-M-RET-may-split-line '((default . nil)))
+    (org-capture-templates
+     '(("f" "Fleeting note" item
+        (file+headline org-default-notes-file "Notes")
+        "- %?")
+       ("t" "New task" entry
+        (file+headline "~/org/todo.org" "Fleeting Tasks")
+        "* TODO %i%?")
+       ("a" "Agenda notes" entry
+        (file+datetree "~/org/notes.org")
+        "* %U Agenda notes for %^{Agenda item} \n%?"
+        :clock-in t :clock-resume t :clock-out t)
+      ("j" "Journal" entry (file+datetree "~/org/journal.org")
+         "* %?\nEntered on %U\n  %i\n  %a")))
+    (efs/org-font-setup)
+    )
 #+END_SRC
 ** Org Extensions
 *** Org Super Agenda
@@ -384,36 +388,36 @@
 
 *** Org-Roam
 #+BEGIN_SRC emacs-lisp
-      (use-package org-roam
-        :ensure t
-        :custom
-        (org-roam-directory "~/org/roam")
-        :bind (
-    	   ("C-c n l" . org-roam-buffer-toggle)
-               ("C-c n f" . org-roam-node-find)
-               ("C-c n g" . org-roam-graph)
-               ("C-c n i" . org-roam-node-insert)
-               ("C-c n c" . org-roam-capture)
-               ;; Dailies
-               ("C-c n j" . org-roam-dailies-capture-today)
-  	     )
-        :config
-        (setq org-roam-graph-executable
-      	(executable-find "neato"))
-        (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
-        (setq org-roam-completion-system 'ido)
-        (org-roam-db-autosync-mode)
-        ;; If using org-roam-protocol
-        (require 'org-roam-protocol)
-        (evil-define-key 'normal 'global (kbd "<leader>rb" ) 'org-roam-buffer-toggle)
-        (evil-define-key 'normal 'global (kbd "<leader>rf" ) 'org-roam-node-find)
-        (evil-define-key 'normal 'global (kbd "<leader>rg" ) 'org-roam-graph)
-        (evil-define-key 'normal 'global (kbd "<leader>ri" ) 'org-roam-node-insert)
-        (evil-define-key 'normal 'global (kbd "<leader>rc" ) 'org-roam-capture)
-        (evil-define-key 'normal 'global (kbd "<leader>rt" ) 'org-roam-tag-add)
-        ;; Dailies
-        (evil-define-key 'normal 'global (kbd "<leader>dj" ) 'org-roam-dailies-capture-today)
-        )
+  (use-package org-roam
+    :ensure t
+    :custom
+    (org-roam-directory "~/org/roam")
+    :bind (
+         ("C-c n l" . org-roam-buffer-toggle)
+           ("C-c n f" . org-roam-node-find)
+           ("C-c n g" . org-roam-graph)
+           ("C-c n i" . org-roam-node-insert)
+           ("C-c n c" . org-roam-capture)
+           ;; Dailies
+           ("C-c n j" . org-roam-dailies-capture-today)
+         )
+    :config
+    (rune/leader-keys ;; requires general.el
+      "rb" 'org-roam-buffer-toggle
+      "rf" 'org-roam-node-find
+      "rg" 'org-roam-graph
+      "ri" 'org-roam-node-insert
+      "rc" 'org-roam-capture
+      "rd" 'org-roam-dailies-capture-today
+      )
+    (setq org-roam-graph-executable
+        (executable-find "neato"))
+    (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+    (setq org-roam-completion-system 'ido)
+    (org-roam-db-autosync-mode)
+    ;; If using org-roam-protocol
+    (require 'org-roam-protocol)
+    )
     #+END_SRC
 
 *** Org Re-Reveal
@@ -464,8 +468,10 @@
 #+END_SRC
 * Notmuch Configuration
 #+BEGIN_SRC emacs-lisp
-  (use-package notmuch
-    )
+    (autoload 'notmuch "notmuch" "notmuch mail" t)
+    (evil-define-key 'normal 'global (kbd "<leader>e") 'notmuch)
+  (evil-define-key 'normal notmuch-hello-mode-map "?" 'notmuch-help)
+  (evil-define-key 'normal notmuch-hello-mode-map "G" 'notmuch-poll)
 #+END_SRC
 * Miscellaneous Configuration
 ** Man Mode
@@ -1071,16 +1077,17 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
 
 ** General
 #+BEGIN_SRC emacs-lisp
-(use-package general
-  :config
-  (general-create-definer rune/leader-keys
-    :keymaps '(normal insert visual emacs)
-    :prefix "SPC"
-    :global-prefix "C-SPC")
+  (use-package general
+    :config
+    (general-create-definer rune/leader-keys
+      :keymaps '(normal insert visual emacs)
+      :prefix "SPC"
+      :global-prefix "C-SPC")
 
-  (rune/leader-keys
-    "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    (rune/leader-keys
+      "t"  '(:ignore t :which-key "toggles")
+      "tt" '(counsel-load-theme :which-key "choose theme")
+      ))
 
 #+END_SRC
 
@@ -1275,7 +1282,29 @@ These from [[https://isamert.net/2021/01/25/how-i-do-keep-my-days-organized-with
 #+BEGIN_SRC emacs-lisp
   (use-package nix-mode
     :ensure t
-    :mode "\\.nix\\'")
+    :mode "\\.nix\\'"
+    :hook   (nix-mode . lsp-deferred) ;; So that envrc mode will work
+    )
+(use-package nix-mode
+  :after lsp-mode
+  :custom
+  (lsp-disabled-clients '((nix-mode . nix-nil))) ;; Disable nil so that nixd will be used as lsp-server
+  :config
+  (setq lsp-nix-nixd-server-path "nixd"))
+#+END_SRC
+
+* Rust mode
+#+BEGIN_SRC emacs-lisp
+      (use-package rust-mode
+        :ensure t)
+    (use-package ob-rust
+      :ensure t
+      :after org
+      :config
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       '((rust . t)))
+  )
 #+END_SRC
 
 * Setup                                                     :noexport:
